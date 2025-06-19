@@ -24,7 +24,8 @@
       "@depts" : [ "src/depts.ts" ],
       "@envs" : [ "src/envs.ts" ],
       "@types" : [ "src/types.ts" ],
-    }
+    },
+    "types": ["jest", "node"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]

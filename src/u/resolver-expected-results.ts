@@ -25,7 +25,7 @@ export function resolverExpectedResults( data:Record<string , any> , expected : 
 
     return Object.keys( expected ).map(( key ) => {
       let newKey = expected[key];
-      if( typeof expected[key] == 'object' )return [ newKey , Object.fromEntries( resolveKeys( data[key] , expected[key] ) )];
+      if( typeof expected[key] == 'object' )return [ newKey , Object.fromEntries( resolveKeys( data[key] , expected[key] as ExpectedMapResult ) )];
       return [ newKey , data[key] ];
     }) as [ string , string | Record< string , any > ][]
   }

@@ -22,7 +22,7 @@ import { simpleTransform } from './u/simple-transform';
  * WorkerCallbackSchema.parse(myCallback); // Validates the callback
  * ```
  */
-const WorkerCallbackSchema = z.custom<WorkerCallback>((val) => {
+const WorkerCallbackSchema = z.custom<WorkerCallback>((val:any) => {
   return (
     typeof val === 'function' &&
     typeof (val as any).controller === 'function' &&
@@ -239,7 +239,7 @@ class MQ extends Queue{
     let { success , error} = WorkersSchema.safeParse( factorized_tasks );
 
     if( !success ){
-      error?.errors.forEach(( error ) => {
+      error?.errors.forEach(( error:any ) => {
         logger.child({ name : error.code }).error( `\n${yaml.stringify(error).red}` );
       });
     }

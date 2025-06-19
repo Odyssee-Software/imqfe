@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
+    "test": "jest",
     "build": "tsc && tsc-alias",
     "dev": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\")"
   },
@@ -10,10 +11,22 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "colors": "^1.4.0",
     "flowed": "^1.15.0",
     "flowed-st": "^1.0.6",
+    "pino": "^9.7.0",
+    "pino-pretty": "^13.0.0",
     "queue": "^6.0.2",
     "socket.io": "^4.8.1",
-    "stjs": "^0.0.5"
+    "stjs": "^0.0.5",
+    "yaml": "^2.8.0",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@thesheps/jest-md-reporter": "^0.0.8",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.2",
+    "ts-jest": "^29.4.0",
+    "tsc-alias": "^1.8.16"
   }
 }
