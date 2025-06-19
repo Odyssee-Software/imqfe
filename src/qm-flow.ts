@@ -33,52 +33,56 @@ import { resolverExpectedResults } from './u/resolver-expected-results';
  * - Debugging
 */
 
-/**
- * Represents a worker resolver configuration in the task execution flow.
- *
- * @interface WorkerResolver
- * @property {string} name - The identifier or name of the worker resolver
- * @property {Record<string, string>} [params] - Optional key-value pairs of parameters for the worker
- * @property {Record<string, string>} [results] - Optional key-value pairs of expected results from the worker
- */
-interface WorkerResolver{
-  name : string;
-  params? : Record<string , string>;
-  results? : Record<string , string>;
-}
+namespace FlowProducer{
 
-/**
- * Represents a worker that can process tasks in a workflow.
- *
- * @interface TaskWorker
- * @property {string[]} provides - Array of outputs this worker can produce
- * @property {string[]} requires - Array of inputs this worker needs to function
- * @property {WorkerResolver} resolver - Function that implements the worker's logic
- */
-interface TaskWorker{
-  provides : string[];
-  requires : string[];
-  resolver : WorkerResolver
-}
+  /**
+   * Represents a worker resolver configuration in the task execution flow.
+   *
+   * @interface WorkerResolver
+   * @property {string} name - The identifier or name of the worker resolver
+   * @property {Record<string, string>} [params] - Optional key-value pairs of parameters for the worker
+   * @property {Record<string, string>} [results] - Optional key-value pairs of expected results from the worker
+   */
+  export interface WorkerResolver{
+    name : string;
+    params? : Record<string , string>;
+    results? : Record<string , string>;
+  }
 
-/**
- * Represents the specification of a flow within the system.
- * 
- * @interface FlowSpec
- * @property {Record<string, TaskWorker>} tasks - A mapping of task identifiers to their corresponding TaskWorker implementations.
- *                                                Each key represents a unique task identifier, and the value is the associated worker.
- */
-interface FlowSpec{
-  tasks : Record<string , TaskWorker>;
+  /**
+   * Represents a worker that can process tasks in a workflow.
+   *
+   * @interface TaskWorker
+   * @property {string[]} provides - Array of outputs this worker can produce
+   * @property {string[]} requires - Array of inputs this worker needs to function
+   * @property {WorkerResolver} resolver - Function that implements the worker's logic
+   */
+  export interface TaskWorker{
+    provides : string[];
+    requires : string[];
+    resolver : WorkerResolver
+  }
+
+  /**
+   * Represents the specification of a flow within the system.
+   * 
+   * @interface FlowSpec
+   * @property {Record<string, TaskWorker>} tasks - A mapping of task identifiers to their corresponding TaskWorker implementations.
+   *                                                Each key represents a unique task identifier, and the value is the associated worker.
+   */
+  export interface FlowSpec{
+    tasks : Record<string , TaskWorker>;
+  }
+  
 }
 
 class FlowProducer{
 
   queue : MQ = null as any;
-  specs : FlowSpec = { tasks : {} };
+  specs : FlowProducer.FlowSpec = { tasks : {} };
   resolverRegistry = ResolversRegistry;
 
-  constructor( specs? : { tasks : Record< string , TaskWorker > } ){
+  constructor( specs? : { tasks : Record< string , FlowProducer.TaskWorker > } ){
 
     let queuename = crypto.randomUUID();
     IMQ.set( queuename , new MQ({ results : [] , name : queuename }) )
@@ -94,7 +98,7 @@ class FlowProducer{
 
   }
 
-  add( taskname:string , task : TaskWorker ){
+  add( taskname:string , task : FlowProducer.TaskWorker ){
 
     if( ResolversRegistry[task.resolver.name as keyof typeof ResolversRegistry] ){
       let callback = ResolversRegistry[task.resolver.name as keyof typeof ResolversRegistry];
@@ -194,8 +198,5 @@ class FlowProducer{
 // }
 
 export {
-  WorkerResolver,
-  TaskWorker,
-  FlowSpec,
   FlowProducer
 }

@@ -90,9 +90,6 @@ export {
 
 export {
   FlowProducer,
-  FlowSpec,
-  WorkerResolver,
-  TaskWorker
 } from './qm-flow';
 
 export {
