@@ -1,8 +1,15 @@
 const ST = require('stjs');
 
-export type TransformPatern = {
-  transform : Record< string , any > 
-};
+namespace simpleTransform {
+
+  export type Data = Record< string , any >;
+
+  export type Patern = {
+    transform : Record< string , any > 
+  };
+
+}
+
 
 /**
  * Performs a simple transformation on a data object using a specified transform pattern.
@@ -10,8 +17,10 @@ export type TransformPatern = {
  * @param patern - The transform pattern to apply to the data
  * @returns The transformed data object
  */
-export function simpleTransform( data : Record< string , any > , patern : TransformPatern ){
+function simpleTransform( data : simpleTransform.Data , patern : simpleTransform.Patern ){
   return ST.select( data )
   .transformWith( patern.transform )
   .root();
-}
+};
+
+export { simpleTransform };

@@ -5,7 +5,7 @@
   "scripts": {
     "test": "jest",
     "build": "tsc && tsc-alias",
-    "dev": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\")"
+    "dev": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\" \"jest --watch\")"
   },
   "author": "",
   "license": "ISC",

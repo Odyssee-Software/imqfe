@@ -588,7 +588,7 @@ function WorkerController( controller:any , properties : Record<string , any> , 
 
 class MQMap extends Map< string , MQ >{
 
-}
+};
 
 /**
  * Type representing a mapping of queue names to their corresponding message queue instances.

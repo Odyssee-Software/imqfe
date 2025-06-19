@@ -1,5 +1,14 @@
-export interface ExpectedMapResult {
-  [key: string]: string | ExpectedMapResult;
+
+namespace resolverExpectedResults{
+
+  export type Input = Record<string , any>;
+
+  export interface Expected {
+    [key: string]: string | Expected;
+  }
+
+  export type Output = Record<string , any>;
+
 }
 
 /**
@@ -17,15 +26,15 @@ export interface ExpectedMapResult {
  * // Returns: { newFoo: 'bar', nested: { newA: 1 } }
  * ```
  */
-export function resolverExpectedResults( data:Record<string , any> , expected : ExpectedMapResult ):Record< string , any >{
+function resolverExpectedResults( data:resolverExpectedResults.Input , expected : resolverExpectedResults.Expected ):resolverExpectedResults.Output{
 
   if( !data )return {};
 
-  function resolveKeys( data:Record<string , any> , expected : ExpectedMapResult ): [ string , string | Record< string , any > ][] {
+  function resolveKeys( data:Record<string , any> , expected : resolverExpectedResults.Expected ): [ string , string | Record< string , any > ][] {
 
     return Object.keys( expected ).map(( key ) => {
       let newKey = expected[key];
-      if( typeof expected[key] == 'object' )return [ newKey , Object.fromEntries( resolveKeys( data[key] , expected[key] as ExpectedMapResult ) )];
+      if( typeof expected[key] == 'object' )return [ newKey , Object.fromEntries( resolveKeys( data[key] , expected[key] as resolverExpectedResults.Expected ) )];
       return [ newKey , data[key] ];
     }) as [ string , string | Record< string , any > ][]
   }
@@ -33,3 +42,5 @@ export function resolverExpectedResults( data:Record<string , any> , expected : 
   return Object.fromEntries( resolveKeys( data , expected ) );
 
 }
+
+export { resolverExpectedResults }

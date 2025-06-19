@@ -1,6 +1,6 @@
 # @odyssee-software/imqfe Test Results
 
-> **Started**: Thu, 19 Jun 2025 16:23:24 GMT
+> **Started**: Thu, 19 Jun 2025 17:00:37 GMT
 
 <center>
 
@@ -18,7 +18,7 @@
 <th>qm.test.ts</th>
 <th></th>
 <th></th>
-<th>0.706</th>
+<th>0.968</th>
 </tr>
 </thead>
 <tbody>
@@ -26,13 +26,13 @@
 <td><strong>Memory Queue Tests / WorkerController Validation</strong></td>
 <td><i>should validate a properly constructed worker callback</i></td>
 <td>passed</td>
-<td>0.002</td>
+<td>0.004</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / WorkerController Validation</strong></td>
 <td><i>should create worker with correct structure</i></td>
 <td>passed</td>
-<td>0.001</td>
+<td>0.002</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Job lifecycle and events</strong></td>
@@ -44,7 +44,7 @@
 <td><strong>Memory Queue Tests / Job lifecycle and events</strong></td>
 <td><i>should allow following a job with follow()</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.006</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Job lifecycle and events</strong></td>
@@ -68,7 +68,7 @@
 <td><strong>Memory Queue Tests / job() method</strong></td>
 <td><i>should find a job by id</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.001</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / job() method</strong></td>
@@ -84,7 +84,7 @@
 <th>qm-flow.test.ts</th>
 <th></th>
 <th></th>
-<th>0.088</th>
+<th>1.007</th>
 </tr>
 </thead>
 <tbody>
@@ -92,13 +92,13 @@
 <td><strong>FlowProducer / constructor</strong></td>
 <td><i>should initialize with empty specs if none provided</i></td>
 <td>passed</td>
-<td>0.001</td>
+<td>0.003</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>FlowProducer / constructor</strong></td>
 <td><i>should initialize with provided specs</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.001</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>FlowProducer / add()</strong></td>

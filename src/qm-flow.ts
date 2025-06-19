@@ -73,7 +73,7 @@ namespace FlowProducer{
   export interface FlowSpec{
     tasks : Record<string , TaskWorker>;
   }
-  
+
 }
 
 class FlowProducer{
@@ -89,12 +89,6 @@ class FlowProducer{
     this.queue = IMQ.get( queuename ) as MQ;
 
     this.specs = specs || { tasks : {} };
-
-    // if( specs && specs.tasks ){
-    //   Object.keys( specs.tasks ).forEach(( taskName:string ) => {
-    //     this.add( taskName , specs.tasks[taskName] );
-    //   })
-    // }
 
   }
 
@@ -138,7 +132,6 @@ class FlowProducer{
         .filter((result) => {
           let x : any = result;
           return (x?.provides || []).map(( provideKey:string ) => {
-            // if( expectedOutputs.includes(provideKey) && x.resolver.results[provideKey] )return true;
             if( expectedOutputs.includes(provideKey))return true;
             else return false;
           }).includes( true )
@@ -155,33 +148,6 @@ class FlowProducer{
 
         })
 
-        // .map(( result ) => {
-
-        //   let x : any = result;
-        //   let keysValue : [string , any][];
-
-        //   if( x.resolver.results ){
-
-        //     let resolverResults = x.resolver.results;
-        //     keysValue = Object.keys(x.data).map(( dataKey ) => {
-        //       if( dataKey in resolverResults )return [ resolverResults[dataKey] , x.data[dataKey] ];
-        //       return null;
-        //     }).filter( (x:any) => x ) as [string , any][];
-            
-        //   }
-        //   else keysValue = Object.keys(x.data).map(( dataKey ) => [ dataKey , x.data[dataKey] ]) as [string , any][];
-
-        //   return keysValue;
-
-        // })
-        // .flat(1)
-        // .reduce(( obj , [ key , value ] ) => {
-        //   obj[key] = value;
-        //   return obj;
-        // } , {  } as Record<string , any>);
-
-        console.log({ outputs })
-
         next( outputs )
       });
     })
@@ -192,10 +158,6 @@ class FlowProducer{
   static runFromUrl(){}
 
 }
-
-// function FlowManager(){
-
-// }
 
 export {
   FlowProducer
