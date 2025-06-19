@@ -9,7 +9,7 @@
   },
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Flow Engine & In Memory Queue",
   "dependencies": {
     "colors": "^1.4.0",
     "flowed": "^1.15.0",
