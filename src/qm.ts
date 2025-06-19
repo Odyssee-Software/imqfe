@@ -254,7 +254,7 @@ class MQ extends Queue{
    * @returns The removed job object if found, null otherwise
    * @memberof MemoryQueue
    */
-  dequeue( this:MemoryQueue , jobId: string | crypto.UUID) {
+  dequeue( jobId: string | crypto.UUID) {
     const index = this.jobs.findIndex(job => job.id === jobId);
     if (index !== -1) {
       const [removed] = this.jobs.splice(index, 1);
@@ -268,9 +268,11 @@ class MQ extends Queue{
    * @param jobId - The unique identifier of the job to find
    * @returns The job object if found, undefined otherwise
    */
-  job( this:MemoryQueue , jobId : string | crypto.UUID ){
+  job( jobId : string | crypto.UUID ){
     return [...this.jobs , ...this.results].find( (job) => job.id == jobId );
   }
+
+  start(callback?: ((error?: Error) => void) | undefined){ return super.start( callback ) }
 
 }
 
