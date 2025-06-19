@@ -1,10 +1,10 @@
 import { Server , http , HTTPSServer , Http2SecureServer , Http2Server } from '@depts';
 import { PORT } from '@envs';
 
-import { InMemoryQueues , MQ } from './qm';
+import { IMQ , MQ } from './qm';
 import { ActionRegistry , ActionContext } from './registry';
 
-InMemoryQueues.set('main' , new MQ({ results : [] , name : 'main-queue' }));
+IMQ.set('main' , new MQ({ results : [] , name : 'main-queue' }));
 
 ActionRegistry.use(
   'DateNow',
@@ -83,15 +83,9 @@ function CreateServer( httpServer : ServerInstance ){
 }
 
 export { 
-  MQ , 
-  Options ,
-  MQCallbackMap , 
+  MQ, 
+  IMQ,
   WorkerController , 
-  MemoryQueue , 
-  WorkerFactory , 
-  WorkerControllerProperties , 
-  WorkerCallback , 
-  WorkerResult 
 } from './qm';
 
 export {
@@ -102,7 +96,6 @@ export {
 } from './qm-flow';
 
 export {
-  InMemoryQueues,
   TWServer,
   ServerInstance,
   CreateServer,

@@ -1,5 +1,5 @@
 import { crypto } from '@depts';
-import { InMemoryQueues , MQ , WorkerController } from './qm';
+import { IMQ , MQ , WorkerController } from './qm';
 
 import { ResolversRegistry } from './resolver-registry';
 
@@ -81,8 +81,8 @@ class FlowProducer{
   constructor( specs? : { tasks : Record< string , TaskWorker > } ){
 
     let queuename = crypto.randomUUID();
-    InMemoryQueues.set( queuename , new MQ({ results : [] , name : queuename }) )
-    this.queue = InMemoryQueues.get( queuename ) as MQ;
+    IMQ.set( queuename , new MQ({ results : [] , name : queuename }) )
+    this.queue = IMQ.get( queuename ) as MQ;
 
     this.specs = specs || { tasks : {} };
 

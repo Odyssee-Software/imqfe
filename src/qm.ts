@@ -22,7 +22,7 @@ import { simpleTransform } from './u/simple-transform';
  * WorkerCallbackSchema.parse(myCallback); // Validates the callback
  * ```
  */
-const WorkerCallbackSchema = z.custom<WorkerCallback>((val:any) => {
+const WorkerCallbackSchema = z.custom<MQ.WorkerCallback>((val:any) => {
   return (
     typeof val === 'function' &&
     typeof (val as any).controller === 'function' &&
@@ -37,20 +37,6 @@ const WorkerCallbackSchema = z.custom<WorkerCallback>((val:any) => {
  * @type {z.ZodArray<typeof WorkerCallbackSchema>}
  */
 const WorkersSchema = z.array(WorkerCallbackSchema);
-
-/**
- * Represents an in-memory queue structure for managing worker callbacks.
- * 
- * @interface MemoryQueue
- * @extends {MQ}
- * 
- * @property {WorkerCallback[]} results - Array storing callback results from workers
- * @property {WorkerCallback[]} jobs - Array storing pending worker callback jobs
- */
-type MemoryQueue = {
-  results : WorkerCallback[];
-  jobs : WorkerCallback[];
-} & typeof MQ;
 
 /**
  * Extends the native Map class to provide specialized callback management for the message queue system.
@@ -86,9 +72,102 @@ class MQCallbackMap extends Map{
 
 }
 
-type Options = CreateQueueOptions & {
-  name : string;
-};
+namespace MQ{
+
+  export type Options = CreateQueueOptions & {
+    name : string;
+  };
+
+  /**
+   * Represents an in-memory queue structure for managing worker callbacks.
+   * 
+   * @interface MemoryQueue
+   * @extends {MQ}
+   * 
+   * @property {WorkerCallback[]} results - Array storing callback results from workers
+   * @property {WorkerCallback[]} jobs - Array storing pending worker callback jobs
+   */
+  export type MemoryQueue = {
+    results : WorkerCallback[];
+    jobs : WorkerCallback[];
+  } & typeof MQ;
+
+  /**
+   * Represents the result of a worker operation in a message queue system.
+   * @interface WorkerResult
+   * @property {string | crypto.UUID} id - Unique identifier for the worker result
+   * @property {boolean | null} success - Indicates if the operation was successful
+   * @property {'waiting' | 'success' | 'error'} status - Current status of the worker
+   * @property {any} data - Output data from the worker operation
+   * @property {any} error - Error information if the operation failed
+   * @property {Function} controller - Controller function for managing the worker
+   * @property {WorkerControllerProperties} properties - Configuration properties for the worker controller
+   * @property {MQ} queue - Reference to the message queue instance
+   * @property {function(cb: (error: any, result: any) => void): void} follow - Method to track worker progress
+   * @property {function(event: 'start' | 'error' | 'success', cb: (job: WorkerResult) => void): void} on - Event handler for worker lifecycle events
+   * @property {function(event: 'end', cb: () => void): void} on - Event handler for worker completion
+   */
+  export type WorkerResult = { 
+    id : string | crypto.UUID;
+    success : boolean | null;
+    status : 'waiting' | 'success' | 'error';
+    data : any;
+    error : any;
+    controller : Function;
+    properties : WorkerControllerProperties;
+    createdDt : number;
+    executionDt : number | null;
+    completedDt : number | null;
+    queue:MQ;
+    /** Method to track worker progress */
+    follow( cb:( step : string , error:any , result:any ) => void ):void;
+    /** Event handler for worker lifecycle events */
+    on:(( event : 'start' | 'error' | 'success' , cb:( job:WorkerResult ) => void ) => void) & (( event : 'end' , cb:() => void ) => void);
+    /**
+    * Attempts to resolve required dependencies by searching through jobs and results in the queue.
+    * Will retry multiple times with delays if no matches are found initially.
+    * 
+    * @param requires - Array of string identifiers representing required dependencies
+    * @returns Array of WorkerCallback matches that provide the required dependencies
+    * @remarks Uses exponential backoff retry pattern with max 4 attempts and 100ms delay between attempts
+    * @this WorkerResult - Method must be called in context of a WorkerResult instance
+    */
+    resolveRequiresByName(this: WorkerResult, requires: string[]):WorkerCallback[];
+    awaitResolveRequire(this: WorkerResult, requires : WorkerCallback[] ):Promise<WorkerCallback[]>;
+  };
+
+  /**
+   * Represents a record of worker controller properties where keys are strings and values can be of any type.
+   * This type is used to store arbitrary configuration or state data associated with a worker controller.
+   * @typedef {Record<string, any>} WorkerControllerProperties
+   */
+  export type WorkerControllerProperties = Record<string , any>;
+
+  /**
+   * Represents a combined type that merges QueueWorker and WorkerResult interfaces.
+   * This type is used to define a callback function for queue workers that includes
+   * both worker functionality and result handling capabilities.
+   * 
+   * @typedef {QueueWorker & WorkerResult} WorkerCallback
+   */
+  export type WorkerCallback< T extends Record< string , any > = Record< string , any > > = (QueueWorker & WorkerResult & T);
+
+  /**
+   * A factory function that creates a worker callback for processing queue items.
+   * @param queue - The message queue instance to associate with the worker
+   * @returns A callback function that will be executed for each queue item
+   */
+  export type WorkerFactory = ( queue:MQ ) => WorkerCallback;
+
+  /**
+   * A function type that creates a worker factory with control capabilities.
+   * @param controller - A function used to control the worker behavior
+   * @param properties - A record of key-value pairs representing the worker properties
+   * @returns A WorkerFactory instance that can create new workers
+   */
+  export type WorkerController = (( controller:Function , properties : Record<string , any> ) => WorkerFactory );
+
+}
 
 /**
  * Represents a memory-based message queue implementation.
@@ -127,21 +206,21 @@ class MQ extends Queue{
    * An array of worker callback functions.
    * Each callback represents a job that can be executed by the worker.
    */
-  jobs: WorkerCallback[] = [];
+  jobs: MQ.WorkerCallback[] = [];
   /**
    * Array storing worker callback functions.
    * Each callback represents a completed task's result handler.
    */
-  results: WorkerCallback[] = [];
+  results: MQ.WorkerCallback[] = [];
   /**
    * A map storing callback functions for the message queue system.
    * Each callback is associated with a specific message or event type.
    */
   callbacks = new MQCallbackMap();
 
-  currents:Set<WorkerCallback> = new Set();
+  currents:Set<MQ.WorkerCallback> = new Set();
 
-  constructor( options : Options ){
+  constructor( options : MQ.Options ){
 
     super( options );
     let queueId = crypto.randomUUID();
@@ -153,7 +232,7 @@ class MQ extends Queue{
       }
     )
 
-    this.on('start' , async ( job:WorkerCallback ) => {
+    this.on('start' , async ( job:MQ.WorkerCallback ) => {
 
       if( !job )return ;
 
@@ -170,7 +249,7 @@ class MQ extends Queue{
 
     });
 
-    this.on('success' , async ( job:WorkerCallback ) => {
+    this.on('success' , async ( job:MQ.WorkerCallback ) => {
 
       if( !job )return ;
 
@@ -188,7 +267,7 @@ class MQ extends Queue{
 
     });
 
-    this.on('error' , async ( job:WorkerCallback ) => {
+    this.on('error' , async ( job:MQ.WorkerCallback ) => {
 
       if( !job )return ;
 
@@ -233,7 +312,7 @@ class MQ extends Queue{
    * );
    * ```
    */
-  enqueue( ...tasks : WorkerFactory[] ){
+  enqueue( ...tasks : MQ.WorkerFactory[] ){
     let factorized_tasks = tasks.map(( task ) => task.bind( this )( this ) );
 
     let { success , error} = WorkersSchema.safeParse( factorized_tasks );
@@ -277,81 +356,6 @@ class MQ extends Queue{
 }
 
 /**
- * Represents the result of a worker operation in a message queue system.
- * @interface WorkerResult
- * @property {string | crypto.UUID} id - Unique identifier for the worker result
- * @property {boolean | null} success - Indicates if the operation was successful
- * @property {'waiting' | 'success' | 'error'} status - Current status of the worker
- * @property {any} data - Output data from the worker operation
- * @property {any} error - Error information if the operation failed
- * @property {Function} controller - Controller function for managing the worker
- * @property {WorkerControllerProperties} properties - Configuration properties for the worker controller
- * @property {MQ} queue - Reference to the message queue instance
- * @property {function(cb: (error: any, result: any) => void): void} follow - Method to track worker progress
- * @property {function(event: 'start' | 'error' | 'success', cb: (job: WorkerResult) => void): void} on - Event handler for worker lifecycle events
- * @property {function(event: 'end', cb: () => void): void} on - Event handler for worker completion
- */
-type WorkerResult = { 
-  id : string | crypto.UUID;
-  success : boolean | null;
-  status : 'waiting' | 'success' | 'error';
-  data : any;
-  error : any;
-  controller : Function;
-  properties : WorkerControllerProperties;
-  createdDt : number;
-  executionDt : number | null;
-  completedDt : number | null;
-  queue:MQ;
-  /** Method to track worker progress */
-  follow( cb:( step : string , error:any , result:any ) => void ):void;
-  /** Event handler for worker lifecycle events */
-  on:(( event : 'start' | 'error' | 'success' , cb:( job:WorkerResult ) => void ) => void) & (( event : 'end' , cb:() => void ) => void);
-  /**
-  * Attempts to resolve required dependencies by searching through jobs and results in the queue.
-  * Will retry multiple times with delays if no matches are found initially.
-  * 
-  * @param requires - Array of string identifiers representing required dependencies
-  * @returns Array of WorkerCallback matches that provide the required dependencies
-  * @remarks Uses exponential backoff retry pattern with max 4 attempts and 100ms delay between attempts
-  * @this WorkerResult - Method must be called in context of a WorkerResult instance
-  */
-  resolveRequiresByName(this: WorkerResult, requires: string[]):WorkerCallback[];
-  awaitResolveRequire(this: WorkerResult, requires : WorkerCallback[] ):Promise<WorkerCallback[]>;
-};
-
-/**
- * Represents a record of worker controller properties where keys are strings and values can be of any type.
- * This type is used to store arbitrary configuration or state data associated with a worker controller.
- * @typedef {Record<string, any>} WorkerControllerProperties
- */
-type WorkerControllerProperties = Record<string , any>;
-
-/**
- * Represents a combined type that merges QueueWorker and WorkerResult interfaces.
- * This type is used to define a callback function for queue workers that includes
- * both worker functionality and result handling capabilities.
- * 
- * @typedef {QueueWorker & WorkerResult} WorkerCallback
- */
-type WorkerCallback< T extends Record< string , any > = Record< string , any > > = (QueueWorker & WorkerResult & T);
-
-/**
- * A factory function that creates a worker callback for processing queue items.
- * @param queue - The message queue instance to associate with the worker
- * @returns A callback function that will be executed for each queue item
- */
-type WorkerFactory = ( queue:MQ ) => WorkerCallback;
-
-/**
- * A function type that creates a worker factory with control capabilities.
- * @param controller - A function used to control the worker behavior
- * @param properties - A record of key-value pairs representing the worker properties
- * @returns A WorkerFactory instance that can create new workers
- */
-type WorkerController = (( controller:Function , properties : Record<string , any> ) => WorkerFactory );
-
-/**
  * Creates a worker controller function that manages asynchronous task execution.
  * 
  * @param controller - The main controller function that performs the actual task
@@ -379,7 +383,7 @@ type WorkerController = (( controller:Function , properties : Record<string , an
  * result.on('success', (data) => console.log(data));
  * ```
  */
-function WorkerController( controller:any , properties : Record<string , any> , options ? : Record<string , any> ) : WorkerFactory{
+function WorkerController( controller:any , properties : Record<string , any> , options ? : Record<string , any> ) : MQ.WorkerFactory{
 
   return function( this:MQ , queue:MQ ){
 
@@ -404,7 +408,7 @@ function WorkerController( controller:any , properties : Record<string , any> , 
         on( event : 'start' | 'error' | 'success' | 'end' , cb ){
           this.queue.callbacks.set( `on:${this.id}:${event}` , cb );
         },
-        resolveRequiresByName( requires: string[] ):WorkerCallback[]{
+        resolveRequiresByName( requires: string[] ):MQ.WorkerCallback[]{
 
           let _j = [...this.queue.jobs, ...Array.from( this.queue.currents ) ,  ...this.queue.results].flat(1);
           const matches = _j.filter((job: any) => {
@@ -418,7 +422,7 @@ function WorkerController( controller:any , properties : Record<string , any> , 
           }
           else return [];
         },
-        async awaitResolveRequire( requires : WorkerCallback[] ):Promise<WorkerCallback[]>{
+        async awaitResolveRequire( requires : MQ.WorkerCallback[] ):Promise<MQ.WorkerCallback[]>{
           return Promise.all(
             Array.from(
               requires,
@@ -429,11 +433,11 @@ function WorkerController( controller:any , properties : Record<string , any> , 
                 })
               }
             )
-          ) as Promise<WorkerCallback[]>
+          ) as Promise<MQ.WorkerCallback[]>
         }
-      } as WorkerResult,
+      } as MQ.WorkerResult,
       options || {},
-    ) as WorkerCallback;
+    ) as MQ.WorkerCallback;
 
     async function worker_ctr (){
 
@@ -475,7 +479,7 @@ function WorkerController( controller:any , properties : Record<string , any> , 
          * 2. Passes the mapped data to a controller function
          * 3. Updates the worker controller state with the execution result
          */
-        async function workerExecWithDependencies( jobs:WorkerCallback[] ){
+        async function workerExecWithDependencies( jobs:MQ.WorkerCallback[] ){
 
           let properties = Object.fromEntries( 
             new Map(
@@ -529,7 +533,7 @@ function WorkerController( controller:any , properties : Record<string , any> , 
             executionDt,
             completedDt : Date.now(),
             error : error
-          }) as WorkerResult );
+          }) as MQ.WorkerResult );
         }
 
         /**
@@ -538,7 +542,7 @@ function WorkerController( controller:any , properties : Record<string , any> , 
          * @returns Result of worker dependencies execution or error handler result
          * @throws {Error} Propagates any error to the worker error handler
          */
-        function workerExecResolveRequire( requires:WorkerCallback[] ){
+        function workerExecResolveRequire( requires:MQ.WorkerCallback[] ){
 
           try{
             return workerExecWithDependencies( requires );
@@ -565,7 +569,7 @@ function WorkerController( controller:any , properties : Record<string , any> , 
           let isWaiting = !isSuccess && !isErrored ? true : false;
 
           if( isWaiting )workerController.awaitResolveRequire( requires ).then(async ( requires ) => {
-            await workerExecResolveRequire( requires as WorkerCallback[] );
+            await workerExecResolveRequire( requires as MQ.WorkerCallback[] );
           })
           else if( isSuccess )await workerExecResolveRequire( requires );
           else await workerExecResolveRequire( [] );
@@ -578,7 +582,11 @@ function WorkerController( controller:any , properties : Record<string , any> , 
 
     return workerController;
 
-  } as unknown as WorkerFactory;
+  } as unknown as MQ.WorkerFactory;
+
+}
+
+class MQMap extends Map< string , MQ >{
 
 }
 
@@ -589,7 +597,7 @@ function WorkerController( controller:any , properties : Record<string , any> , 
  * 
  * @typedef {Map<string, MQ>} InMemoryQueues
  */
-type InMemoryQueues = Map< string , MQ >;
+type IMQ = MQMap;
 
 /**
  * Global map storing in-memory message queues.
@@ -597,17 +605,10 @@ type InMemoryQueues = Map< string , MQ >;
  * The key is a unique queue identifier string.
  * The value is a message queue instance of type MQ.
  */
-const InMemoryQueues:Map< string , MQ > = new Map();
+const IMQ:MQMap = new MQMap();
 
-export { 
-  MQ , 
-  Options ,
-  WorkerController , 
-  InMemoryQueues , 
-  MemoryQueue , 
-  MQCallbackMap , 
-  WorkerResult , 
-  WorkerControllerProperties , 
-  WorkerCallback , 
-  WorkerFactory 
+export {
+  WorkerController, 
+  MQ, 
+  IMQ,
 };
