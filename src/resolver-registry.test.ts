@@ -9,6 +9,7 @@ describe("ResolversRegistry", () => {
   });
 
   describe("flowher::Echo", () => {
+    
     it("should return input value in out property", () => {
       const params = { in: "test value" };
       const result = ResolversRegistry["flowher::Echo"](params);
