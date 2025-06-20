@@ -79,6 +79,60 @@ queue.on('end', () => {
 
 ---
 
+## Lancement individuel d’un job
+
+Chaque worker (job) ajouté à la queue peut être lancé individuellement grâce à la méthode `start()`. Cela permet de contrôler précisément quand un job est exécuté, indépendamment du traitement automatique de la file d’attente.
+
+### Pourquoi utiliser `worker.start()` ?
+
+- **Contrôle fin** : Exécuter un job à la demande, sans attendre le cycle global de la queue.
+- **Rejouer un job** : Relancer un job déjà défini, par exemple pour rejouer une opération ou tester un scénario.
+- **Audit et historique** : Utiliser la queue comme un historique d’exécutions, où chaque job peut être consulté ou relancé.
+
+### Exemple
+
+```typescript
+const queue = new MQ({ name: 'historique' });
+const workerFactory = WorkerController(async () => 'résultat', {});
+const [worker] = queue.enqueue(workerFactory);
+
+// Lancement manuel du job
+await worker.start();
+
+console.log(worker.status); // 'success'
+console.log(worker.data);   // 'résultat'
+```
+
+Vous pouvez aussi passer un callback à `start()` pour gérer le résultat ou l’erreur :
+
+```typescript
+worker.start((error, result) => {
+  if (error) {
+    console.error('Erreur lors de l’exécution du job', error);
+  } else {
+    console.log('Résultat du job', result);
+  }
+});
+```
+
+### Historique des exécutions
+
+Tous les jobs exécutés (manuellement ou via la queue) sont conservés dans `queue.results`. Vous pouvez ainsi :
+
+- Parcourir l’historique des jobs exécutés
+- Relancer un job spécifique
+- Auditer les statuts, erreurs et résultats
+
+```typescript
+queue.results.forEach(job => {
+  console.log(job.id, job.status, job.data);
+});
+```
+
+> **Astuce :** Cette approche permet d’utiliser MQ comme un « journal » ou un « log » d’exécution, et pas seulement comme une simple file FIFO.
+
+---
+
 ## API Principale
 
 MQ
