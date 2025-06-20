@@ -126,7 +126,81 @@ describe('Memory Queue Tests', () => {
     });
   });
 
+  describe('Worker start()', () => {
+
+    it('should return worker result', async () => {
+      const queue = new MQ({ name: 'test-queue' });
+      const workerFactory = WorkerController(async () => 'test result', {});
+      const [worker] = queue.enqueue(workerFactory);
+
+      let result = await worker.start();
+
+      console.log({ result })
+
+      expect( result ).toBeDefined();
+    });
+
+    it('should execute worker and return result in callback if used', async () => {
+      const queue = new MQ({ name: 'test-queue' });
+      let testResult = 'test result';
+      const workerFactory = WorkerController(async () => testResult, {});
+      const [worker] = queue.enqueue(workerFactory);
+
+      worker.start(( error , result ) => {
+        expect(error).toBe(null);
+        expect(result).toBe(testResult);
+      });
+      
+    });
+
+    it('should execute worker and return errors in callback if used', async () => {
+      const queue = new MQ({ name: 'test-queue' });
+      const errorMessage = 'Test error';
+      const workerFactory = WorkerController(async () => { throw new Error(errorMessage); }, {});
+      const [worker] = queue.enqueue(workerFactory);
+
+      worker.start(( error ) => {
+        expect(error instanceof Error).toBe(true);
+      });
+
+    });
+
+    it('should execute worker and return result', async () => {
+      const queue = new MQ({ name: 'test-queue' });
+      const workerFactory = WorkerController(async () => 'test result', {});
+      const [worker] = queue.enqueue(workerFactory);
+
+      await worker.start();
+
+      expect(worker.status).toBe('success');
+      expect(worker.success).toBe(true);
+      expect(worker.data).toBe('test result');
+      expect(worker.error).toBeNull();
+      expect(worker.executionDt).toBeDefined();
+      expect(worker.completedDt).toBeDefined();
+    });
+
+    it('should handle worker execution errors', async () => {
+      const queue = new MQ({ name: 'test-queue' });
+      const errorMessage = 'Test error';
+      const workerFactory = WorkerController(async () => { throw new Error(errorMessage); }, {});
+      const [worker] = queue.enqueue(workerFactory);
+
+      try {
+        await worker.start();
+      } catch (e) {
+        // ignore
+      }
+
+      expect(worker.status).toBe('error');
+      expect(worker.success).toBe(false);
+      expect(worker.error?.message).toBe(errorMessage);
+    });
+
+  })
+
   describe('job() method', () => {
+
     it('should find a job by id', () => {
       const queue = new MQ({ name: 'test-queue' });
       const workerFactory = WorkerController(async () => 'test', {});
@@ -141,6 +215,7 @@ describe('Memory Queue Tests', () => {
       const found = queue.job('unknown-id');
       expect(found).toBeUndefined();
     });
+
   });
 
 });

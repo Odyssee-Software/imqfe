@@ -96,6 +96,7 @@ namespace MQ{
    * Represents the result of a worker operation in a message queue system.
    * @interface WorkerResult
    * @property {string | crypto.UUID} id - Unique identifier for the worker result
+   * @property {number} index - Index of the worker in the queue
    * @property {boolean | null} success - Indicates if the operation was successful
    * @property {'waiting' | 'success' | 'error'} status - Current status of the worker
    * @property {any} data - Output data from the worker operation
@@ -103,12 +104,17 @@ namespace MQ{
    * @property {Function} controller - Controller function for managing the worker
    * @property {WorkerControllerProperties} properties - Configuration properties for the worker controller
    * @property {MQ} queue - Reference to the message queue instance
+   * @property {number} createdDt - Timestamp when the worker was created
+   * @property {number | null} executionDt - Timestamp when the worker started execution
+   * @property {number | null} completedDt - Timestamp when the worker completed execution
+   * * @property {function(callback?: ((error?: Error) => void) | undefined): void} start - Method to start
    * @property {function(cb: (error: any, result: any) => void): void} follow - Method to track worker progress
    * @property {function(event: 'start' | 'error' | 'success', cb: (job: WorkerResult) => void): void} on - Event handler for worker lifecycle events
    * @property {function(event: 'end', cb: () => void): void} on - Event handler for worker completion
    */
   export type WorkerResult = { 
     id : string | crypto.UUID;
+    // index : number;
     success : boolean | null;
     status : 'waiting' | 'success' | 'error';
     data : any;
@@ -119,6 +125,7 @@ namespace MQ{
     executionDt : number | null;
     completedDt : number | null;
     queue:MQ;
+    start( callback?: ((error?: Error , result?:any) => void) | undefined ):void;
     /** Method to track worker progress */
     follow( cb:( step : string , error:any , result:any ) => void ):void;
     /** Event handler for worker lifecycle events */
@@ -352,6 +359,18 @@ class MQ extends Queue{
   }
 
   start(callback?: ((error?: Error) => void) | undefined){ return super.start( callback ) }
+  stop(){ return super.stop() }
+  end(error?: Error){ return super.end(error) }
+
+  push( ...workers: MQ.WorkerCallback[] ):number{ return super.push( ...workers ); }
+  unshift(...workers: QueueWorker[]): number { return super.unshift( ...workers ); }
+  splice(start: number, deleteCount?: number): MQ { return super.splice( start , deleteCount ) as MQ; }
+  pop(): MQ.WorkerCallback | undefined { return super.pop() as MQ.WorkerCallback; }
+  shift(): MQ.WorkerCallback | undefined { return super.shift() as MQ.WorkerCallback; }
+  slice(start?: number, end?: number): MQ { return super.slice( start , end ) as MQ; }
+  reverse(): MQ { return super.reverse() as MQ; }
+  indexOf(searchElement: QueueWorker, fromIndex?: number): number { return super.indexOf( searchElement , fromIndex ) as number; }
+  lastIndexOf(searchElement: QueueWorker, fromIndex?: number): number { return super.lastIndexOf( searchElement , fromIndex ) as number; }
 
 }
 
@@ -387,8 +406,6 @@ function WorkerController( controller:any , properties : Record<string , any> , 
 
   return function( this:MQ , queue:MQ ){
 
-    const self = this;
-
     const workerController = Object.assign( worker_ctr ,
       {
         success : null,
@@ -398,7 +415,7 @@ function WorkerController( controller:any , properties : Record<string , any> , 
         get controller(){ return worker_ctr },
         data : null,
         error : null,
-        get queue(){return self || queue},
+        get queue(){return queue},
         createdDt : Date.now(),
         executionDt : null,
         completedDt : null,
@@ -434,6 +451,51 @@ function WorkerController( controller:any , properties : Record<string , any> , 
               }
             )
           ) as Promise<MQ.WorkerCallback[]>
+        },
+        async start( callback?: ((error?: Error , result? : any) => void) | undefined) {
+
+          const worker = this as MQ.WorkerCallback;
+
+          if( worker.success == true || worker.success == false ){
+            logger.warn( `WorkerController ${worker.id} already started.` );
+            return;
+          }
+
+          const index = queue.jobs.findIndex(( job ) => job.id == worker.id );
+
+          if( index == -1 ){
+            logger.warn( `WorkerController ${worker.id} not found in queue.` );
+            return;
+          }
+
+          let executionDt = Date.now();
+
+          try{
+            Object.assign( workerController , {
+              status : 'success',
+              success : true,
+              executionDt,
+              completedDt : Date.now(),
+              data : await controller( properties ),
+            });
+          }
+          catch( error:any ){
+            Object.assign( workerController , {
+              status : 'error',
+              success : false,
+              executionDt,
+              completedDt : Date.now(),
+              error : error,
+            })
+          }
+
+          worker.queue.results.push( worker );
+          worker.queue.jobs = worker.queue.jobs.filter(( job ) => job.id != worker.id );
+
+          if( typeof callback === 'function' )await callback( worker.error , worker.data );
+
+          return workerController;
+
         }
       } as MQ.WorkerResult,
       options || {},
