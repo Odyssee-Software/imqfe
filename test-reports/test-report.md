@@ -1,6 +1,6 @@
 # @odyssee-software/imqfe Test Results
 
-> **Started**: Sun, 22 Jun 2025 14:39:51 GMT
+> **Started**: Sun, 22 Jun 2025 14:40:47 GMT
 
 <center>
 
@@ -15,10 +15,58 @@
 <table>
 <thead>
 <tr>
+<th>mq-flow.test.ts</th>
+<th></th>
+<th></th>
+<th>1.174</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background-color: lightgreen; color: black">
+<td><strong>FlowProducer / constructor</strong></td>
+<td><i>should initialize with empty specs if none provided</i></td>
+<td>passed</td>
+<td>0.003</td>
+</tr>
+<tr style="background-color: lightgreen; color: black">
+<td><strong>FlowProducer / constructor</strong></td>
+<td><i>should initialize with provided specs</i></td>
+<td>passed</td>
+<td>0.001</td>
+</tr>
+<tr style="background-color: lightgreen; color: black">
+<td><strong>FlowProducer / add()</strong></td>
+<td><i>should throw error for invalid resolver name</i></td>
+<td>passed</td>
+<td>0</td>
+</tr>
+<tr style="background-color: lightgreen; color: black">
+<td><strong>FlowProducer / add()</strong></td>
+<td><i>should add valid task to queue</i></td>
+<td>passed</td>
+<td>0.001</td>
+</tr>
+<tr style="background-color: lightgreen; color: black">
+<td><strong>FlowProducer / run()</strong></td>
+<td><i>should run flow and return expected outputs</i></td>
+<td>passed</td>
+<td>0.011</td>
+</tr>
+<tr style="background-color: lightgreen; color: black">
+<td><strong>FlowProducer / static run()</strong></td>
+<td><i>should execute flow and resolve with outputs</i></td>
+<td>passed</td>
+<td>0.001</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
 <th>mq.test.ts</th>
 <th></th>
 <th></th>
-<th>1.081</th>
+<th>1.214</th>
 </tr>
 </thead>
 <tbody>
@@ -26,7 +74,7 @@
 <td><strong>Memory Queue Tests / WorkerController Validation</strong></td>
 <td><i>should validate a properly constructed worker callback</i></td>
 <td>passed</td>
-<td>0.003</td>
+<td>0.004</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / WorkerController Validation</strong></td>
@@ -38,13 +86,13 @@
 <td><strong>Memory Queue Tests / Job lifecycle and events</strong></td>
 <td><i>should trigger &#34;start&#34;, &#34;success&#34; and &#34;end&#34; events</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.005</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Job lifecycle and events</strong></td>
 <td><i>should allow following a job with follow()</i></td>
 <td>passed</td>
-<td>0.003</td>
+<td>0.001</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Job lifecycle and events</strong></td>
@@ -80,7 +128,7 @@
 <td><strong>Memory Queue Tests / Worker start()</strong></td>
 <td><i>should return worker result</i></td>
 <td>passed</td>
-<td>0.007</td>
+<td>0.01</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Worker start()</strong></td>
@@ -98,67 +146,19 @@
 <td><strong>Memory Queue Tests / Worker start()</strong></td>
 <td><i>should execute worker and return result</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.001</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Worker start()</strong></td>
 <td><i>should handle worker execution errors</i></td>
 <td>passed</td>
-<td>0.001</td>
+<td>0</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Job chaining</strong></td>
 <td><i>should chain jobs and pass results between workers</i></td>
 <td>passed</td>
-<td>0.001</td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th>mq-flow.test.ts</th>
-<th></th>
-<th></th>
-<th>1.086</th>
-</tr>
-</thead>
-<tbody>
-<tr style="background-color: lightgreen; color: black">
-<td><strong>FlowProducer / constructor</strong></td>
-<td><i>should initialize with empty specs if none provided</i></td>
-<td>passed</td>
-<td>0.003</td>
-</tr>
-<tr style="background-color: lightgreen; color: black">
-<td><strong>FlowProducer / constructor</strong></td>
-<td><i>should initialize with provided specs</i></td>
-<td>passed</td>
-<td>0</td>
-</tr>
-<tr style="background-color: lightgreen; color: black">
-<td><strong>FlowProducer / add()</strong></td>
-<td><i>should throw error for invalid resolver name</i></td>
-<td>passed</td>
-<td>0.001</td>
-</tr>
-<tr style="background-color: lightgreen; color: black">
-<td><strong>FlowProducer / add()</strong></td>
-<td><i>should add valid task to queue</i></td>
-<td>passed</td>
-<td>0.001</td>
-</tr>
-<tr style="background-color: lightgreen; color: black">
-<td><strong>FlowProducer / run()</strong></td>
-<td><i>should run flow and return expected outputs</i></td>
-<td>passed</td>
-<td>0.007</td>
-</tr>
-<tr style="background-color: lightgreen; color: black">
-<td><strong>FlowProducer / static run()</strong></td>
-<td><i>should execute flow and resolve with outputs</i></td>
-<td>passed</td>
-<td>0.001</td>
+<td>0.002</td>
 </tr>
 </tbody>
 </table>
@@ -168,7 +168,7 @@
 <th>resolver-registry.test.ts</th>
 <th></th>
 <th></th>
-<th>1.301</th>
+<th>1.321</th>
 </tr>
 </thead>
 <tbody>
@@ -194,13 +194,13 @@
 <td><strong>ResolversRegistry / flowher::ThrowError</strong></td>
 <td><i>should throw error with default message when no message provided</i></td>
 <td>passed</td>
-<td>0.008</td>
+<td>0.025</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>ResolversRegistry / flowher::ThrowError</strong></td>
 <td><i>should throw error with provided message</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.001</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>ResolversRegistry / flowher::Conditional</strong></td>
@@ -218,13 +218,13 @@
 <td><strong>ResolversRegistry / flowher::Conditional</strong></td>
 <td><i>should handle different result value types</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.001</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>ResolversRegistry / flowher::Wait</strong></td>
 <td><i>should resolve after specified delay with given result</i></td>
 <td>passed</td>
-<td>0.104</td>
+<td>0.106</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>ResolversRegistry / flowher::Wait</strong></td>
