@@ -150,10 +150,8 @@ Dans cet exemple, le premier worker (`getDate`) fournit une date, et le second (
 ```typescript
 const queue = new MQ({ name: 'test-queue' });
 
-const date = new Date();
-
 const getDate = WorkerController(
-  async () => date,
+  async () => new Date(),
   {},
   { provides: ['date'] }
 );
