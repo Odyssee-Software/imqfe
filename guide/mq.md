@@ -133,6 +133,81 @@ queue.results.forEach(job => {
 
 ---
 
+## Exemples avancés
+
+### Chaînage de jobs
+
+Le chaînage de jobs permet de faire dépendre l’exécution d’un worker des résultats d’un ou plusieurs jobs précédents. Cela permet de construire des pipelines de traitement, où chaque étape utilise les résultats des étapes précédentes.
+
+### Gestion des dépendances entre jobs
+
+Un worker peut dépendre des résultats d’autres jobs (par exemple, pour chaîner des traitements). Utilisez les propriétés `requires` et `provides` pour déclarer les dépendances, et le système MQ s’occupe de la résolution.
+
+#### Exemple : chaînage simple
+
+Dans cet exemple, le premier worker (`getDate`) fournit une date, et le second (`formatDate`) dépend de ce résultat pour formater la date :
+
+```typescript
+const queue = new MQ({ name: 'test-queue' });
+
+const date = new Date();
+
+const getDate = WorkerController(
+  async () => date,
+  {},
+  { provides: ['date'] }
+);
+
+const formatDate = WorkerController(
+  async ({ '0': date }: { '0': Date }) => ({
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate()
+  }),
+  {},
+  { requires: ['date'] }
+);
+
+const [worker1, worker2] = queue.enqueue(getDate, formatDate);
+
+queue.start(() => {
+  // worker1 a exécuté et fourni la date
+  // worker2 a reçu la date et l’a formatée
+  console.log({ result : worker2.data })
+});
+```
+
+#### Dépendances explicites
+
+- Le worker `getDate` déclare `provides: ['date']` : il expose la donnée `date` à la suite du pipeline.
+- Le worker `formatDate` déclare `requires: ['date']` : il attend que la donnée `date` soit disponible avant de s’exécuter.
+
+Le système MQ s’occupe de résoudre ces dépendances et d’exécuter les jobs dans le bon ordre.
+
+---
+
+### Pourquoi utiliser les flows ?
+
+Pour des scénarios de chaînage plus complexes (branches, conditions, parallélisme, etc.), il est recommandé d’utiliser le moteur de flows fourni par le package. Les flows permettent de :
+
+- Définir des graphes de dépendances complexes entre jobs
+- Orchestrer des exécutions conditionnelles ou parallèles
+- Réutiliser des modèles de pipelines
+- Gérer dynamiquement les entrées/sorties et les résolveurs
+
+**En résumé :**  
+Le chaînage de jobs avec MQ est idéal pour des pipelines simples ou linéaires. Pour des orchestrations avancées, utilisez les flows qui sont conçus pour cela.
+
+---
+
+## Bonnes pratiques
+
+- Utilisez `follow` pour suivre l’évolution d’un job.
+- Utilisez `on` pour réagir aux événements de la queue ou d’un job.
+- Nettoyez les callbacks avec la méthode `dispose` si besoin.
+
+---
+
 ## API Principale
 
 MQ
@@ -143,34 +218,7 @@ MQ
 - `start(callback?)` : Démarre l’exécution de la file.
 - `on(event, callback)` : Écoute les événements globaux (`start`, `success`, `error`, `end`).
 
-WorkerController
-Permet de créer des jobs personnalisés avec gestion des propriétés, du suivi, des événements et des dépendances.
-
----
-
-## Gestion des dépendances entre jobs
-
-Un worker peut dépendre des résultats d’autres jobs (par exemple, pour chaîner des traitements). Utilisez les propriétés `requires` et `provides` pour déclarer les dépendances, et le système MQ s’occupe de la résolution.
-
----
-
-## Exemples avancés
-
-Chaînage de jobs
-
-```typescript
-const workerA = WorkerController(async () => 42, {});
-const workerB = WorkerController(async ({ 0: resultA }) => resultA + 1, {});
-queue.enqueue(workerA, workerB);
-```
-
----
-
-## Bonnes pratiques
-
-- Utilisez `follow` pour suivre l’évolution d’un job.
-- Utilisez `on` pour réagir aux événements de la queue ou d’un job.
-- Nettoyez les callbacks avec la méthode `dispose` si besoin.
+- `WorkerController` : Permet de créer des jobs personnalisés avec gestion des propriétés, du suivi, des événements et des dépendances.
 
 ---
 

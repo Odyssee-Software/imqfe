@@ -1,4 +1,4 @@
-import { FlowProducer } from './qm-flow';
+import { FlowProducer } from './mq-flow';
 
 describe('FlowProducer', () => {
 

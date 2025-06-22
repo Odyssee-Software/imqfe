@@ -1,4 +1,4 @@
-import { MQ, WorkerController } from './qm';
+import { MQ, WorkerController } from './mq';
 
 describe('Memory Queue Tests', () => {
 
@@ -126,6 +126,25 @@ describe('Memory Queue Tests', () => {
     });
   });
 
+  describe('job() method', () => {
+
+    it('should find a job by id', () => {
+      const queue = new MQ({ name: 'test-queue' });
+      const workerFactory = WorkerController(async () => 'test', {});
+      const [worker] = queue.enqueue(workerFactory);
+
+      const found = queue.job(worker.id);
+      expect(found).toBe(worker);
+    });
+
+    it('should return undefined for unknown job id', () => {
+      const queue = new MQ({ name: 'test-queue' });
+      const found = queue.job('unknown-id');
+      expect(found).toBeUndefined();
+    });
+
+  });
+
   describe('Worker start()', () => {
 
     it('should return worker result', async () => {
@@ -197,23 +216,53 @@ describe('Memory Queue Tests', () => {
       expect(worker.error?.message).toBe(errorMessage);
     });
 
-  })
+  });
 
-  describe('job() method', () => {
+  /** Chaînage de jobs */
+  describe('Job chaining', () => {
 
-    it('should find a job by id', () => {
+    it('should chain jobs and pass results between workers', async () => {
       const queue = new MQ({ name: 'test-queue' });
-      const workerFactory = WorkerController(async () => 'test', {});
-      const [worker] = queue.enqueue(workerFactory);
 
-      const found = queue.job(worker.id);
-      expect(found).toBe(worker);
-    });
+      const date = new Date();
 
-    it('should return undefined for unknown job id', () => {
-      const queue = new MQ({ name: 'test-queue' });
-      const found = queue.job('unknown-id');
-      expect(found).toBeUndefined();
+      const getDate = WorkerController(async () => date, 
+        {} , 
+        { provides : ['date'] }
+      );
+
+      const formatDate = WorkerController(async ({ '0': date }: { '0': Date }) => {
+        return {
+          year: date.getFullYear(),
+          month: date.getMonth() + 1,
+          day: date.getDate()
+        };
+      }, {} , 
+      {
+        requires: ['date']
+      });
+
+      const [worker1, worker2] = queue.enqueue(getDate, formatDate);
+
+      await new Promise<void>((resolve, reject) => {
+        queue.start(() => {
+          try {
+            expect(worker1.status).toBe('success');
+            expect(worker1.data).toBe(date);
+
+            expect(worker2.status).toBe('success');
+            expect(worker2.data).toEqual({
+              year: date.getFullYear(),
+              month: date.getMonth() + 1,
+              day: date.getDate()
+            });
+
+            resolve();
+          } catch (e) {
+            reject(e);
+          }
+        });
+      });
     });
 
   });

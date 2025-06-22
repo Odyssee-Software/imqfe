@@ -1,5 +1,5 @@
 import { crypto } from '@depts';
-import { IMQ , MQ , WorkerController } from './qm';
+import { IMQ , MQ , WorkerController } from './mq';
 
 import { ResolversRegistry } from './resolver-registry';
 

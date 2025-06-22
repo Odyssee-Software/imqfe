@@ -29,6 +29,7 @@ npm install @odyssee-software/imqfe
 ## Utilisation rapide
 
 ### 1. Création d’un flow simple
+Pour une introduction détaillée à la création et l’utilisation des flows, consultez le [guide des flows](./guide/flow.md).
 
 ```ts
 import { FlowProducer } from '@odyssee-software/imqfe';
@@ -71,6 +72,8 @@ Voir [`src/resolver-registry.ts`](src/resolver-registry.ts) pour la liste compl�
 
 Le module MQ permet de gérer des files de jobs, leur exécution, le suivi d’état, les événements et les résultats, le tout en mémoire.
 
+Pour une explication complète et des exemples avancés, consultez le [guide MQ](./guide/mq.md).
+
 ### Exemple minimal
 
 ```ts
@@ -109,19 +112,21 @@ worker.follow((step, error, result) => {
 });
 ```
 
-Pour plus de détails, voir [`src/qm.ts`](src/qm.ts).
+Pour plus de détails, voir [`src/mq.ts`](src/mq.ts).
 
 ---
 
 ## API Principale
 
-### FlowProducer ([`src/qm-flow.ts`](src/qm-flow.ts))
+### FlowProducer ([`src/mq-flow.ts`](src/mq-flow.ts))
 
 - `constructor(specs?)` : Initialise un flow avec des tâches optionnelles
 - `add(taskName, taskSpec)` : Ajoute une tâche au flow
 - `run(params, expectedOutputs, actions?, context?)` : Exécute le flow et retourne les résultats attendus
 
-### MQ ([`src/qm.ts`](src/qm.ts))
+Pour plus d’informations et d’exemples, consultez le [guide des flows](./guide/flow.md).
+
+### MQ ([`src/mq.ts`](src/mq.ts))
 
 - `enqueue(...workers)` : Ajoute un ou plusieurs jobs à la file
 - `dequeue(jobId)` : Retire un job de la file par son identifiant
@@ -130,7 +135,9 @@ Pour plus de détails, voir [`src/qm.ts`](src/qm.ts).
 - Gestion des événements : `on('success'|'error'|'start'|'end', callback)`
 - Suivi d’un job : `worker.follow(callback)`
 
-### WorkerController ([`src/qm.ts`](src/qm.ts))
+Pour des cas d’usage avancés, voir le [guide MQ](./guide/mq.md).
+
+### WorkerController ([`src/mq.ts`](src/mq.ts))
 
 - Permet de créer des workers personnalisés avec gestion des propriétés, du suivi, des événements et des dépendances.
 

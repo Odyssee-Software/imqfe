@@ -2,10 +2,10 @@ export {
   MQ, 
   IMQ,
   WorkerController , 
-} from './qm';
+} from './mq';
 
 export {
   FlowProducer,
-} from './qm-flow';
+} from './mq-flow';
 
 

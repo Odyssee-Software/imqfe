@@ -557,13 +557,11 @@ function WorkerController( controller:any , properties : Record<string , any> , 
           );
           try{
 
-            if( 'transform' in workerController.resolver?.params ){
-              console.log({ properties })
+            if( workerController.resolver?.params && 'transform' in workerController.resolver?.params ){
               properties = simpleTransform( 
                 properties,
                 { transform : workerController.resolver?.params.transform }
-              )
-              console.log({ properties })
+              );
             }
             
             let data = await controller( properties );
