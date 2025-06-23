@@ -1,4 +1,5 @@
 import { Queue , QueueWorker , crypto , z , logger , yaml , CreateQueueOptions } from '@depts';
+import { ValueMap } from '@types';
 
 import { resolverExpectedResults } from './u/resolver-expected-results';
 import { simpleTransform } from './u/simple-transform';
@@ -146,9 +147,9 @@ namespace MQ{
   /**
    * Represents a record of worker controller properties where keys are strings and values can be of any type.
    * This type is used to store arbitrary configuration or state data associated with a worker controller.
-   * @typedef {Record<string, any>} WorkerControllerProperties
+   * @typedef {ValueMap} WorkerControllerProperties
    */
-  export type WorkerControllerProperties = Record<string , any>;
+  export type WorkerControllerProperties = ValueMap;
 
   /**
    * Represents a combined type that merges QueueWorker and WorkerResult interfaces.
@@ -157,7 +158,7 @@ namespace MQ{
    * 
    * @typedef {QueueWorker & WorkerResult} WorkerCallback
    */
-  export type WorkerCallback< T extends Record< string , any > = Record< string , any > > = (QueueWorker & WorkerResult & T);
+  export type WorkerCallback< T extends ValueMap = ValueMap > = (QueueWorker & WorkerResult & T);
 
   /**
    * A factory function that creates a worker callback for processing queue items.
@@ -172,7 +173,7 @@ namespace MQ{
    * @param properties - A record of key-value pairs representing the worker properties
    * @returns A WorkerFactory instance that can create new workers
    */
-  export type WorkerController = (( controller:Function , properties : Record<string , any> ) => WorkerFactory );
+  export type WorkerController = (( controller:Function , properties : ValueMap ) => WorkerFactory );
 
 }
 
@@ -402,7 +403,7 @@ class MQ extends Queue{
  * result.on('success', (data) => console.log(data));
  * ```
  */
-function WorkerController( controller:any , properties : Record<string , any> , options ? : Record<string , any> ) : MQ.WorkerFactory{
+function WorkerController( controller:any , properties : ValueMap , options ? : ValueMap ) : MQ.WorkerFactory{
 
   return function( this:MQ , queue:MQ ){
 
@@ -555,11 +556,13 @@ function WorkerController( controller:any , properties : Record<string , any> , 
               } ) 
             ) 
           );
+
           try{
 
             if( workerController.resolver?.params && 'transform' in workerController.resolver?.params ){
+              let dataset = Object.values(properties).reduce(( obj:Record<string , any> , current:any ) => Object.assign( obj , current ) , {});
               properties = simpleTransform( 
-                properties,
+                dataset,
                 { transform : workerController.resolver?.params.transform }
               );
             }

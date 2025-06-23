@@ -1,5 +1,7 @@
 import { ValueMap } from '@types';
 
+import { FlowProducer } from './mq-flow';
+
 /**
  * Registry of built-in flow resolvers.
  * Each resolver is a function that takes parameters and returns a result.
@@ -43,7 +45,7 @@ interface ResolversRegistry {
   /**
    * Executes a sub-flow within the current flow.
    */
-  'flowher::SubFlow': () => void;
+  'flowher::SubFlow': (params: ValueMap, context: ValueMap) => Promise<ValueMap>;
 
   /**
    * Repeats execution of a flow segment.
@@ -91,7 +93,25 @@ const ResolversRegistry:ResolversRegistry = {
       }, params.ms);
     });
   },
-  'flowher::SubFlow' : function(){},
+  'flowher::SubFlow' : function(params: ValueMap, context: ValueMap):Promise<ValueMap>{
+    return new Promise(( resolve , reject ) => {
+      let flow = new FlowProducer(params.flowSpec);
+
+      flow.run(
+        params.flowSpec,
+        params.flowExpectedResults,
+        {},
+        context,
+      )
+      .then((flowResult:any) => {
+        resolve( flowResult );
+      })
+      .catch((error) => {
+        reject({ error: error.message });
+      });
+      
+    })
+  },
   'flowher::Repeater' : function(){},
   'flowher::ArrayMap' : function(){},
   'flowher::Stop' : function(){},
@@ -100,71 +120,22 @@ const ResolversRegistry:ResolversRegistry = {
 
 export { ResolversRegistry };
 
-// // Do nothing and finish
-// export class NoopResolver {
-//   public exec(): ValueMap {
-//     return {};
-//   }
-// }
+// Run a flow and finish
+export class SubFlowResolver {
+  public async exec(params: ValueMap, context: ValueMap): Promise<ValueMap> {
 
-// export class EchoResolver {
-//   public exec(params: ValueMap): ValueMap {
-//     return { out: params.in };
-//   }
-// }
+    let flow = new FlowProducer(params.flowSpec);
 
-// export class ThrowErrorResolver {
-//   public exec(params: ValueMap): ValueMap {
-//     throw new Error(typeof params.message !== 'undefined' ? params.message : 'ThrowErrorResolver resolver has thrown an error');
-//   }
-// }
+    let flowResult = await flow.run(
+      params.flowSpec,
+      params.flowExpectedResults,
+      {},
+      context,
+    );
 
-// export class ConditionalResolver {
-//   public exec(params: ValueMap): ValueMap {
-//     return params.condition ? { onTrue: params.trueResult } : { onFalse: params.falseResult };
-//   }
-// }
-
-// Wait for 'ms' milliseconds and finish
-// export class WaitResolver {
-//   public exec(params: ValueMap): ValueMap {
-//     return new Promise<ValueMap>(resolve => {
-//       setTimeout(() => {
-//         resolve({ result: params.result });
-//       }, params.ms);
-//     });
-//   }
-// }
-
-// // Run a flow and finish
-// export class SubFlowResolver {
-//   public async exec(params: ValueMap, context: ValueMap): Promise<ValueMap> {
-//     // @todo add test with subflow task with flowContext
-//     // @todo document $flowed
-
-//     // If no resolvers specified as parameter, inherit from global scope
-//     let flowResolvers = params.flowResolvers;
-//     if (typeof flowResolvers === 'undefined') {
-//       flowResolvers = context.$flowed.getResolvers();
-//     }
-
-//     let flowResult = await FlowManager.run(
-//       params.flowSpec,
-//       params.flowParams,
-//       params.flowExpectedResults,
-//       flowResolvers,
-//       context,
-//       context.$flowed.flow.runStatus.runOptions,
-//     );
-
-//     // @todo document param uniqueResult
-//     if (typeof params.uniqueResult === 'string') {
-//       flowResult = flowResult[params.uniqueResult];
-//     }
-
-//     return { flowResult };
-//   }
-// }
+    return { flowResult };
+  }
+}
 
 // // Run a task multiple times and finishes returning an array with all results.
 // // If one execution fails, the repeater resolver ends with an exception (this is valid for both parallel and not parallel modes).

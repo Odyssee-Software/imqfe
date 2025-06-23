@@ -1,11 +1,12 @@
+import { ValueMap } from '@types';
 const ST = require('stjs');
 
 namespace simpleTransform {
 
-  export type Data = Record< string , any >;
+  export type Data = ValueMap;
 
   export type Patern = {
-    transform : Record< string , any > 
+    transform : ValueMap 
   };
 
 }

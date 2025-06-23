@@ -1,13 +1,13 @@
 # @odyssee-software/imqfe Test Results
 
-> **Started**: Sun, 22 Jun 2025 14:40:47 GMT
+> **Started**: Mon, 23 Jun 2025 15:45:58 GMT
 
 <center>
 
 |Suites (3)|Tests (32)|
 |:-:|:-:|
-|![](https://img.shields.io/badge/Passed-3-green) | ![](https://img.shields.io/badge/Passed-32-green)|
-|![](https://img.shields.io/badge/Failed-0-lightgrey) | ![](https://img.shields.io/badge/Failed-0-lightgrey)|
+|![](https://img.shields.io/badge/Passed-2-green) | ![](https://img.shields.io/badge/Passed-30-green)|
+|![](https://img.shields.io/badge/Failed-1-red) | ![](https://img.shields.io/badge/Failed-2-red)|
 |![](https://img.shields.io/badge/Pending-0-lightgrey) | ![](https://img.shields.io/badge/Pending-0-lightgrey)|
 
 ---
@@ -18,7 +18,7 @@
 <th>mq-flow.test.ts</th>
 <th></th>
 <th></th>
-<th>1.174</th>
+<th>1.81</th>
 </tr>
 </thead>
 <tbody>
@@ -32,7 +32,7 @@
 <td><strong>FlowProducer / constructor</strong></td>
 <td><i>should initialize with provided specs</i></td>
 <td>passed</td>
-<td>0.001</td>
+<td>0</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>FlowProducer / add()</strong></td>
@@ -46,16 +46,16 @@
 <td>passed</td>
 <td>0.001</td>
 </tr>
-<tr style="background-color: lightgreen; color: black">
+<tr style="background-color: pink; color: black">
 <td><strong>FlowProducer / run()</strong></td>
 <td><i>should run flow and return expected outputs</i></td>
-<td>passed</td>
+<td>failed</td>
 <td>0.011</td>
 </tr>
-<tr style="background-color: lightgreen; color: black">
+<tr style="background-color: pink; color: black">
 <td><strong>FlowProducer / static run()</strong></td>
 <td><i>should execute flow and resolve with outputs</i></td>
-<td>passed</td>
+<td>failed</td>
 <td>0.001</td>
 </tr>
 </tbody>
@@ -66,7 +66,7 @@
 <th>mq.test.ts</th>
 <th></th>
 <th></th>
-<th>1.214</th>
+<th>1.945</th>
 </tr>
 </thead>
 <tbody>
@@ -86,7 +86,7 @@
 <td><strong>Memory Queue Tests / Job lifecycle and events</strong></td>
 <td><i>should trigger &#34;start&#34;, &#34;success&#34; and &#34;end&#34; events</i></td>
 <td>passed</td>
-<td>0.005</td>
+<td>0</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Job lifecycle and events</strong></td>
@@ -98,7 +98,7 @@
 <td><strong>Memory Queue Tests / Job lifecycle and events</strong></td>
 <td><i>should handle error event</i></td>
 <td>passed</td>
-<td>0.001</td>
+<td>0</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Queue enqueue and dequeue</strong></td>
@@ -110,7 +110,7 @@
 <td><strong>Memory Queue Tests / Queue enqueue and dequeue</strong></td>
 <td><i>should return null when dequeue with unknown id</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.001</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / job() method</strong></td>
@@ -122,43 +122,43 @@
 <td><strong>Memory Queue Tests / job() method</strong></td>
 <td><i>should return undefined for unknown job id</i></td>
 <td>passed</td>
-<td>0.001</td>
+<td>0</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Worker start()</strong></td>
 <td><i>should return worker result</i></td>
 <td>passed</td>
-<td>0.01</td>
+<td>0.017</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Worker start()</strong></td>
 <td><i>should execute worker and return result in callback if used</i></td>
 <td>passed</td>
-<td>0.001</td>
+<td>0.008</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Worker start()</strong></td>
 <td><i>should execute worker and return errors in callback if used</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.001</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Worker start()</strong></td>
 <td><i>should execute worker and return result</i></td>
 <td>passed</td>
-<td>0.001</td>
+<td>0</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Worker start()</strong></td>
 <td><i>should handle worker execution errors</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.001</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>Memory Queue Tests / Job chaining</strong></td>
 <td><i>should chain jobs and pass results between workers</i></td>
 <td>passed</td>
-<td>0.002</td>
+<td>0.004</td>
 </tr>
 </tbody>
 </table>
@@ -168,7 +168,7 @@
 <th>resolver-registry.test.ts</th>
 <th></th>
 <th></th>
-<th>1.321</th>
+<th>2.217</th>
 </tr>
 </thead>
 <tbody>
@@ -176,7 +176,7 @@
 <td><strong>ResolversRegistry / flowher::Noop</strong></td>
 <td><i>should return an empty object</i></td>
 <td>passed</td>
-<td>0.004</td>
+<td>0.022</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>ResolversRegistry / flowher::Echo</strong></td>
@@ -188,19 +188,19 @@
 <td><strong>ResolversRegistry / flowher::Echo</strong></td>
 <td><i>should handle different input types</i></td>
 <td>passed</td>
-<td>0</td>
+<td>0.001</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>ResolversRegistry / flowher::ThrowError</strong></td>
 <td><i>should throw error with default message when no message provided</i></td>
 <td>passed</td>
-<td>0.025</td>
+<td>0.02</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>ResolversRegistry / flowher::ThrowError</strong></td>
 <td><i>should throw error with provided message</i></td>
 <td>passed</td>
-<td>0.001</td>
+<td>0.002</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>ResolversRegistry / flowher::Conditional</strong></td>
@@ -224,13 +224,13 @@
 <td><strong>ResolversRegistry / flowher::Wait</strong></td>
 <td><i>should resolve after specified delay with given result</i></td>
 <td>passed</td>
-<td>0.106</td>
+<td>0.102</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>ResolversRegistry / flowher::Wait</strong></td>
 <td><i>should handle different result value types</i></td>
 <td>passed</td>
-<td>0.205</td>
+<td>0.204</td>
 </tr>
 <tr style="background-color: lightgreen; color: black">
 <td><strong>ResolversRegistry / flowher::Wait</strong></td>

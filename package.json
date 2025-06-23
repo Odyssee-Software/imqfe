@@ -12,6 +12,7 @@
   "description": "Flow Engine & In Memory Queue",
   "dependencies": {
     "colors": "^1.4.0",
+    "node-fetch": "^3.3.2",
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
     "queue": "^6.0.2",

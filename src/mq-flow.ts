@@ -1,4 +1,5 @@
-import { crypto } from '@depts';
+import { crypto ,yaml } from '@depts';
+import { ValueMap } from '@types';
 import { IMQ , MQ , WorkerController } from './mq';
 
 import { ResolversRegistry } from './resolver-registry';
@@ -105,7 +106,7 @@ class FlowProducer{
 
   }
 
-  run( params : Record<string , any> , expectedOutputs : string[] , actions : Record<string , any> , context : Record<string , any> ){
+  run( params : ValueMap , expectedOutputs : string[] , actions : ValueMap , context : ValueMap ){
 
     this.resolverRegistry = Object.assign( ResolversRegistry , actions || {} );
 
@@ -118,7 +119,7 @@ class FlowProducer{
     return FlowProducer.run( this , params , expectedOutputs , context );
   }
 
-  static run( flow : FlowProducer , params : Record<string , any> , expectedOutputs : string[] , context : Record<string , any> ){
+  static run( flow : FlowProducer , params : ValueMap , expectedOutputs : string[] , context : ValueMap ){
 
     console.log({ params , expectedOutputs , actions : flow.resolverRegistry , context })
 
@@ -148,14 +149,74 @@ class FlowProducer{
 
         })
 
-        next( outputs )
+        next( 
+          outputs.flat().reduce(( acc , current ) => {
+            return Object.assign( acc , current );
+          } , {} )
+        )
       });
     })
 
   } 
-  static runFromString(){}
-  static runFromFile(){}
-  static runFromUrl(){}
+
+  static runFromString( str : string ){
+    try{
+      return new FlowProducer( JSON.parse( str ) );
+    }
+    catch( error ){
+      try{
+        return new FlowProducer( yaml.parse( str ) );
+      }
+      catch( error ){
+        throw new Error(`Error parsing flow from string` , { cause : error });
+      }
+    }
+  }
+
+  static runFromFile( absolutePath : string ){
+
+    return new Promise(( next , reject ) => {
+      import('fs').then( fs => {
+        fs.readFile( absolutePath , 'utf8' , ( error , data ) => {
+          if( error ) return reject( error );
+          try{
+            next( FlowProducer.runFromString( data ) );
+          }
+          catch( error ){
+            reject( error );
+          }
+        })
+      }).catch( error => {
+        reject( new Error(`Error importing 'fs' module to read file: ${absolutePath}` , { cause : error }) );
+      })
+    })
+
+  }
+
+  static runFromUrl( url : string | URL ){
+    return new Promise(( next , reject ) => {
+      import('node-fetch').then( fetch => {
+        fetch.default( url )
+        .then( response => {
+          if( !response.ok ) throw new Error(`Error fetching URL: ${url} - Status: ${response.status}`);
+          return response.text();
+        })
+        .then( data => {
+          try{
+            next( FlowProducer.runFromString( data ) );
+          }
+          catch( error ){
+            reject( error );
+          }
+        })
+        .catch( error => {
+          reject( new Error(`Error fetching URL: ${url}` , { cause : error }) );
+        });
+      }).catch( error => {
+        reject( new Error(`Error importing 'node-fetch' module to fetch URL: ${url}` , { cause : error }) );
+      })
+    })
+  }
 
 }
 

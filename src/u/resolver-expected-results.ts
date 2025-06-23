@@ -1,13 +1,14 @@
+import { ValueMap } from '@types';
 
 namespace resolverExpectedResults{
 
-  export type Input = Record<string , any>;
+  export type Input = ValueMap;
 
   export interface Expected {
     [key: string]: string | Expected;
   }
 
-  export type Output = Record<string , any>;
+  export type Output = ValueMap;
 
 }
 
@@ -30,13 +31,13 @@ function resolverExpectedResults( data:resolverExpectedResults.Input , expected 
 
   if( !data )return {};
 
-  function resolveKeys( data:Record<string , any> , expected : resolverExpectedResults.Expected ): [ string , string | Record< string , any > ][] {
+  function resolveKeys( data:ValueMap , expected : resolverExpectedResults.Expected ): [ string , string | ValueMap ][] {
 
     return Object.keys( expected ).map(( key ) => {
       let newKey = expected[key];
       if( typeof expected[key] == 'object' )return [ newKey , Object.fromEntries( resolveKeys( data[key] , expected[key] as resolverExpectedResults.Expected ) )];
       return [ newKey , data[key] ];
-    }) as [ string , string | Record< string , any > ][]
+    }) as [ string , string | ValueMap ][]
   }
 
   return Object.fromEntries( resolveKeys( data , expected ) );
