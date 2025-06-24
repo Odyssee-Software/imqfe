@@ -88,8 +88,11 @@ const ResolversRegistry:ResolversRegistry = {
   // Waits for ms milliseconds and finish returning the specified result.
   'flowher::Wait' : function(params: ValueMap): Promise<ValueMap> {
     return new Promise<ValueMap>(resolve => {
+      console.log({ params })
+      console.log(`flowher::Wait resolver will wait for ${params.ms} milliseconds`);
       setTimeout(() => {
-        resolve({ result: params.result });
+        console.log(`flowher::Wait resolver finished waiting for ${params.ms} milliseconds`);
+        resolve({ result: params?.result || null });
       }, params.ms);
     });
   },

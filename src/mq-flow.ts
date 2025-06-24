@@ -119,7 +119,7 @@ class FlowProducer{
     return FlowProducer.run( this , params , expectedOutputs , context );
   }
 
-  static run( flow : FlowProducer , params : ValueMap , expectedOutputs : string[] , context : ValueMap ){
+  static run( flow : FlowProducer , params : ValueMap , expectedOutputs : string[] , context : ValueMap ):Promise<ValueMap>{
 
     console.log({ params , expectedOutputs , actions : flow.resolverRegistry , context })
 

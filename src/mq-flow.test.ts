@@ -66,12 +66,12 @@ describe('FlowProducer', () => {
       const specs = {
         tasks: {
           echoTask: {
-            provides: ['output1'],
+            provides: ['output'],
             requires: [],
             resolver: {
               name: 'flowher::Echo',
               params: { in: 'test' },
-              results: { out: 'output1' }
+              results: { out: 'output' }
             }
           }
         }
@@ -80,14 +80,14 @@ describe('FlowProducer', () => {
       flowProducer = new FlowProducer(specs);
       const result = await flowProducer.run(
         {}, // params
-        ['output1'], // expectedOutputs
+        ['output'], // expectedOutputs
         {}, // actions
         {} // context
-      ) as any[];
+      );
 
-      expect(Array.isArray(result)).toBe(true);
-      expect(Object.keys(result[0])).toStrictEqual(['output1']);
-      expect(result[0]['output1']).toBe('test');
+      expect( typeof result ).toBe('object');
+      expect(Object.keys(result)).toStrictEqual(['output']);
+      expect(result.output).toBe('test');
     });
   });
 
@@ -96,25 +96,25 @@ describe('FlowProducer', () => {
     it('should execute flow and resolve with outputs', async () => {
       const flow = new FlowProducer();
       flow.add('echoTask', {
-        provides: ['output1'],
+        provides: ['output'],
         requires: [],
         resolver: {
           name: 'flowher::Echo',
           params: { in: 'test' },
-          results: { out: 'output1' }
+          results: { out: 'output' }
         }
       });
 
       const result = await FlowProducer.run(
         flow,
         {}, // params  
-        ['output1'], // expectedOutputs
+        ['output'], // expectedOutputs
         {} // context
-      ) as any[];
+      );
 
-      expect(Array.isArray(result)).toBe(true);
-      expect(Object.keys(result[0])).toStrictEqual(['output1']);
-      expect(result[0]['output1']).toBe('test');
+      expect( typeof result ).toBe('object');
+      expect(Object.keys(result)).toStrictEqual(['output']);
+      expect(result.output).toBe('test');
     });
 
   });

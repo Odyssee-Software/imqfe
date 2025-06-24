@@ -120,6 +120,8 @@ namespace MQ{
     status : 'waiting' | 'success' | 'error';
     data : any;
     error : any;
+    _requires : MQ.WorkerCallback[];
+    _provides : MQ.WorkerCallback[];
     controller : Function;
     properties : WorkerControllerProperties;
     createdDt : number;
@@ -130,7 +132,7 @@ namespace MQ{
     /** Method to track worker progress */
     follow( cb:( step : string , error:any , result:any ) => void ):void;
     /** Event handler for worker lifecycle events */
-    on:(( event : 'start' | 'error' | 'success' , cb:( job:WorkerResult ) => void ) => void) & (( event : 'end' , cb:() => void ) => void);
+    on:(( event : 'start' | 'error' | 'success' , cb:( job:WorkerResult ) => void , callerId? : string ) => void) & (( event : 'end' , cb:() => void , callerId? : string ) => void);
     /**
     * Attempts to resolve required dependencies by searching through jobs and results in the queue.
     * Will retry multiple times with delays if no matches are found initially.
@@ -244,13 +246,25 @@ class MQ extends Queue{
 
       if( !job )return ;
 
-      if( this.callbacks.has( `on:${job.id}:start` ) ){
-        await this.callbacks.get( `on:${job.id}:start` )( job );
-        this.callbacks.delete( `on:${job.id}:start` )
+      let eventKey = `on:${job.id}:start`;
+      let follow_eventKey = `follow:${job.id}`;
+
+      if( this.callbacks.has( eventKey ) ){
+        await this.callbacks.get( eventKey )( job );
+        this.callbacks.delete( eventKey )
+      }
+      else{
+
+        let keys:string[] = Array.from( this.callbacks.keys() );
+        keys.filter(( key ) => new RegExp(`${eventKey}:.*`).test( key ) ).forEach(( key ) => {
+          this.callbacks.get( key )( job );
+          this.callbacks.delete( key );
+        });
+
       }
 
-      if( this.callbacks.has( `follow:${job.id}` ) ){
-        await this.callbacks.get( `follow:${job.id}` ).bind(job)( 'start' , null , null );
+      if( this.callbacks.has( follow_eventKey ) ){
+        await this.callbacks.get( follow_eventKey ).bind(job)( 'start' , null , null );
       }
 
       this.currents.add( job );
@@ -259,16 +273,30 @@ class MQ extends Queue{
 
     this.on('success' , async ( job:MQ.WorkerCallback ) => {
 
+      console.log( `MQ ${this.name} job success: ${job.id}` );
+
       if( !job )return ;
 
-      if( this.callbacks.has( `on:${job.id}:success` ) ){
-        await this.callbacks.get( `on:${job.id}:success` )( job );
-        this.callbacks.delete( `on:${job.id}:success` )
+      let eventKey = `on:${job.id}:success`;
+      let follow_eventKey = `follow:${job.id}`;
+
+      if( this.callbacks.has( eventKey ) ){
+        await this.callbacks.get( eventKey )( job );
+        this.callbacks.delete( eventKey )
+      }
+      else{
+
+        let keys:string[] = Array.from( this.callbacks.keys() );
+        keys.filter(( key ) => new RegExp(`${eventKey}:.*`).test( key ) ).forEach(( key ) => {
+          this.callbacks.get( key )( job );
+          this.callbacks.delete( key );
+        });
+
       }
 
-      if( this.callbacks.has( `follow:${job.id}` ) ){
-        await this.callbacks.get( `follow:${job.id}` ).bind(job)( 'success' , null , job );
-        this.callbacks.delete( `follow:${job.id}` )
+      if( this.callbacks.has( follow_eventKey ) ){
+        await this.callbacks.get( follow_eventKey ).bind(job)( 'success' , null , job );
+        this.callbacks.delete( follow_eventKey )
       }
 
       this.currents.delete( job );
@@ -277,16 +305,30 @@ class MQ extends Queue{
 
     this.on('error' , async ( job:MQ.WorkerCallback ) => {
 
+      console.log( `MQ ${this.name} job success: ${job.id}` );
+
       if( !job )return ;
 
-      if( this.callbacks.has( `on:${job.id}:error` ) ){
-        await this.callbacks.get( `on:${job.id}:error` )( job );
-        this.callbacks.delete( `on:${job.id}:error` )
+      let eventKey = `on:${job.id}:error`;
+      let follow_eventKey = `follow:${job.id}`;
+
+      if( this.callbacks.has( eventKey ) ){
+        await this.callbacks.get( eventKey )( job );
+        this.callbacks.delete( eventKey )
+      }
+      else{
+
+        let keys:string[] = Array.from( this.callbacks.keys() );
+        keys.filter(( key ) => new RegExp(`${eventKey}:.*`).test( key ) ).forEach(( key ) => {
+          this.callbacks.get( key )( job );
+          this.callbacks.delete( key );
+        });
+
       }
 
-      if( this.callbacks.has( `follow:${job.id}` ) ){
-        await this.callbacks.get( `follow:${job.id}` ).bind(job)( 'error' , job , null );
-        this.callbacks.delete( `follow:${job.id}` )
+      if( this.callbacks.has( follow_eventKey ) ){
+        await this.callbacks.get( follow_eventKey ).bind(job)( 'error' , job , null );
+        this.callbacks.delete( follow_eventKey )
       }
 
       this.currents.delete( job );
@@ -420,11 +462,24 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
         createdDt : Date.now(),
         executionDt : null,
         completedDt : null,
+        get _requires(){
+          if( properties && properties.requires && Array.isArray( properties.requires ) ){
+            return this.resolveRequiresByName( properties.requires );
+          }
+          else return [];
+        },
+        get _provides(){
+          if( properties && properties.provides && Array.isArray( properties.provides ) ){
+            return this.resolveRequiresByName( properties.provides );
+          }
+          else return [];
+        },
         follow( cb ) {
           this.queue.callbacks.set( `follow:${this.id}` , cb );
         },
-        on( event : 'start' | 'error' | 'success' | 'end' , cb ){
-          this.queue.callbacks.set( `on:${this.id}:${event}` , cb );
+        on( event : 'start' | 'error' | 'success' | 'end' , cb , callerId? : string ){
+          // this.queue.callbacks.set( `on:${this.id}:${event}` , cb );
+          this.queue.callbacks.set( `on:${this.id}:${event}${callerId ? `:${callerId}` : ''}` , cb );
         },
         resolveRequiresByName( requires: string[] ):MQ.WorkerCallback[]{
 
@@ -441,17 +496,23 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
           else return [];
         },
         async awaitResolveRequire( requires : MQ.WorkerCallback[] ):Promise<MQ.WorkerCallback[]>{
+
           return Promise.all(
             Array.from(
               requires,
               ( worker ) => {
                 return new Promise(( next , reject ) => {
-                  worker.on('success' , ( job ) => next( job ));
-                  worker.on('error' , ( job ) => reject( job ));
+                  if( worker.success == true )return next( worker );
+                  else if( worker.success == false)return reject( worker );
+                  else{
+                    worker.on( 'success' , ( job ) => next( job ) , this.id );
+                    worker.on( 'error' , ( job ) => reject( job ) , this.id );
+                  }
                 })
               }
             )
-          ) as Promise<MQ.WorkerCallback[]>
+          ) as Promise<MQ.WorkerCallback[]>;
+
         },
         async start( callback?: ((error?: Error , result? : any) => void) | undefined) {
 
@@ -559,15 +620,16 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
 
           try{
 
+            let dataset = Object.values(properties).reduce(( obj:Record<string , any> , current:any ) => Object.assign( obj , current ) , {});
+
             if( workerController.resolver?.params && 'transform' in workerController.resolver?.params ){
-              let dataset = Object.values(properties).reduce(( obj:Record<string , any> , current:any ) => Object.assign( obj , current ) , {});
               properties = simpleTransform( 
                 dataset,
                 { transform : workerController.resolver?.params.transform }
               );
             }
             
-            let data = await controller( properties );
+            let data = await controller( {...properties , ...workerController.properties} );
             next(Object.assign( workerController , {
               status : 'success',
               success : true,
@@ -631,9 +693,15 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
           let isErrored = requires.map(( worker ) => worker.status == 'error' ? true : false).includes( true );
           let isWaiting = !isSuccess && !isErrored ? true : false;
 
-          if( isWaiting )workerController.awaitResolveRequire( requires ).then(async ( requires ) => {
-            await workerExecResolveRequire( requires as MQ.WorkerCallback[] );
-          })
+          if( isWaiting ){
+            workerController.awaitResolveRequire( requires )
+            .then(async ( requires ) => {
+              await workerExecResolveRequire( requires as MQ.WorkerCallback[] );
+            })
+            .catch( error => {
+              console.log( error );
+            });
+          }
           else if( isSuccess )await workerExecResolveRequire( requires );
           else await workerExecResolveRequire( [] );
 
