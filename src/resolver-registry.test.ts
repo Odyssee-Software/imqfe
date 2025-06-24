@@ -9,7 +9,6 @@ describe("ResolversRegistry", () => {
   });
 
   describe("flowher::Echo", () => {
-    
     it("should return input value in out property", () => {
       const params = { in: "test value" };
       const result = ResolversRegistry["flowher::Echo"](params);
@@ -120,6 +119,70 @@ describe("ResolversRegistry", () => {
       };
       const result = await ResolversRegistry["flowher::Wait"](params);
       expect(result).toEqual({ result: "immediate" });
+    });
+  });
+
+  describe("flowher::SubFlow", () => {
+    it("should execute a sub-flow and resolve with its result", async () => {
+
+      const params = {
+        flowSpec: {
+          tasks : {
+            getDate: {
+              provides: ['date'],
+              resolver: {
+                name: 'flowher::Echo',
+                params : { in : { value : new Date() } },
+                results: { out: 'date' }
+              }
+            },
+            formatDate : {
+              requires: ['date'],
+              provides: ['formatted-date'],
+              resolver: {
+                name: 'flowher::Echo',
+                params : {
+                  transform : {
+                    in : {
+                      year : '{{this.date.value.getDate()}}',
+                      month : '{{this.date.value.getMonth() + 1}}',
+                      day : '{{this.date.value.getFullYear()}}',
+                    },
+                  }
+                },
+                results: { out: 'formatted-date' }
+              }
+            }
+          }
+        },
+        flowExpectedResults : [ 'formatted-date' ],
+      };
+      const context = { some: "context" };
+
+      const result = await ResolversRegistry["flowher::SubFlow"](
+        params,
+        context
+      );
+
+      expect(result["formatted-date"]).toMatchObject({
+        year: expect.any(Number),
+        month: expect.any(Number),
+        day: expect.any(Number),
+      });
+
+    });
+
+    it("should reject with error message when sub-flow fails", async () => {
+
+      const params = {
+        flowSpec: { some: "flow spec" },
+        flowExpectedResults: { expected: "results" },
+      };
+      const context = { some: "context" };
+
+      await expect(
+        await ResolversRegistry["flowher::SubFlow"](params, context)
+      ).toEqual({});
     });
   });
 });
