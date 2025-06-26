@@ -102,7 +102,7 @@ class FlowProducer{
         ...task
       } ));
     }
-    else throw "";
+    else throw "Error: Invalid resolver name '" + task.resolver.name + "' for task '" + taskname + "'. Available resolvers: " + Object.keys(ResolversRegistry).join(', ');
 
   }
 

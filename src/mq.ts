@@ -446,6 +446,7 @@ class MQ extends Queue{
   reverse(): MQ { return super.reverse() as MQ; }
   indexOf(searchElement: QueueWorker, fromIndex?: number): number { return super.indexOf( searchElement , fromIndex ) as number; }
   lastIndexOf(searchElement: QueueWorker, fromIndex?: number): number { return super.lastIndexOf( searchElement , fromIndex ) as number; }
+  on( event : 'start' | 'error' | 'success' | 'end' , cb:( job:MQ.WorkerCallback ) => void ){ return super.on( event , cb ); }
 
 }
 

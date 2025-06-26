@@ -189,15 +189,21 @@ describe("ResolversRegistry", () => {
     
     it("should call pause on the queue and return the promise", async () => {
 
+      console.log({ FlowProducer})
+
+      // let expectedTasks = [ "wait100ms" , "pauseTask" ];
+      let tasks:string[] = [];
+      let expectedStatus = [ "paused" , "running" , "paused" ];
+      let status:string[] = [];
+
       let flow = new FlowProducer({
         tasks: {
           wait100ms: {
             provides: ['wait100ms'],
             requires: [],
             resolver: {
-              name: "flowher::wait",
-              params: { ms : 100 },
-              results: {}
+              name: "flowher::Wait",
+              params: { ms : 1000 },
             }
           },
           pauseTask: {
@@ -205,24 +211,49 @@ describe("ResolversRegistry", () => {
             requires: ['wait100ms'],
             resolver: {
               name: "flowher::Pause",
-              params: {},
-              results: {}
+              params: {}
+            }
+          },
+          echo : {
+            requires: ['wait100ms'],
+            provides: ['echoedValue'],
+            resolver : {
+              name: 'flowher::Echo',
+              params: { value: 'test' },
+              results: { out: 'echoedValue' }
             }
           }
         }
       });
+      
+      await new Promise<void>(( resolve ) => {
 
-      return await new Promise<void>(( resolve ) => {
+        status.push((flow.queue as any).running ? "running" : "paused");
 
-        flow.run( {} , [] , {} , {} )
-        .then(() => {
-          expect(flow.queue.status).toBe("paused");
+        let exec = flow.run( {} , [''] , {} , {} );
+
+        flow.queue.jobs.forEach(( job:any ) => {
+          job.on("start", () => {
+            console.log({ job });
+            tasks.push(job.name);
+          });
+        })
+
+        status.push((flow.queue as any).running ? "running" : "paused");
+
+        exec.then(() => {
+          status.push((flow.queue as any).running ? "running" : "paused");
+          console.log({ status });
+          console.log({ queue : flow.queue });
+
+          // expect(tasks).toEqual(expectedTasks);
+          expect(status).toEqual(expectedStatus);
           resolve();
         })
 
-        expect(flow.queue.status).toBe("running");
-
       })
+
+      // status.push(flow.queue.status);
 
     });
 
