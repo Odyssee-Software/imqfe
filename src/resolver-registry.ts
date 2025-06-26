@@ -1,5 +1,6 @@
-import { ValueMap } from '@types';
+import type { ValueMap } from '@types';
 
+import type { MQ } from './mq';
 import { FlowProducer } from './mq-flow';
 
 /**
@@ -45,27 +46,29 @@ interface ResolversRegistry {
   /**
    * Executes a sub-flow within the current flow.
    */
-  'flowher::SubFlow': (params: ValueMap, context: ValueMap) => Promise<ValueMap>;
+  'flowher::SubFlow': (params: ValueMap, context?: MQ.WorkerContext ) => Promise<ValueMap>;
 
   /**
    * Repeats execution of a flow segment.
    */
-  'flowher::Repeater': () => void;
+  'flowher::Repeater': (params: ValueMap, context?: MQ.WorkerContext ) => ValueMap;
+
+  'flowher::Loop': (params: ValueMap, context?: MQ.WorkerContext ) => ValueMap;
 
   /**
    * Maps over an array applying a flow to each element.
    */
-  'flowher::ArrayMap': () => void;
+  'flowher::ArrayMap': (params: ValueMap, context?: MQ.WorkerContext ) => ValueMap;
 
   /**
    * Stops the current flow execution.
    */
-  'flowher::Stop': () => void;
+  'flowher::Stop': (params: ValueMap, context?: MQ.WorkerContext ) => ValueMap;
 
   /**
    * Pauses the current flow execution.
    */
-  'flowher::Pause': () => void;
+  'flowher::Pause': (params: ValueMap, context?: MQ.WorkerContext ) => ValueMap;
 }
 
 const ResolversRegistry:ResolversRegistry = {
@@ -88,15 +91,12 @@ const ResolversRegistry:ResolversRegistry = {
   // Waits for ms milliseconds and finish returning the specified result.
   'flowher::Wait' : function(params: ValueMap): Promise<ValueMap> {
     return new Promise<ValueMap>(resolve => {
-      console.log({ params })
-      console.log(`flowher::Wait resolver will wait for ${params.ms} milliseconds`);
       setTimeout(() => {
-        console.log(`flowher::Wait resolver finished waiting for ${params.ms} milliseconds`);
         resolve({ result: params?.result || null });
       }, params.ms);
     });
   },
-  'flowher::SubFlow' : function(params: ValueMap, context: ValueMap):Promise<ValueMap>{
+  'flowher::SubFlow' : function(params: ValueMap, context?: MQ.WorkerContext ):Promise<ValueMap>{
     return new Promise(( resolve , reject ) => {
       let flow = new FlowProducer(params.flowSpec);
 
@@ -104,7 +104,7 @@ const ResolversRegistry:ResolversRegistry = {
         params.flowSpec,
         params.flowExpectedResults,
         {},
-        context,
+        context || {},
       )
       .then((flowResult:any) => {
         resolve( flowResult );
@@ -115,17 +115,33 @@ const ResolversRegistry:ResolversRegistry = {
       
     })
   },
-  'flowher::Repeater' : function(){},
-  'flowher::ArrayMap' : function(){},
-  'flowher::Stop' : function(){},
-  'flowher::Pause' : function(){},
+  'flowher::Repeater' : function(params : ValueMap, context?: MQ.WorkerContext ): ValueMap{
+    console.log({ params, context });
+    return {};
+  },
+  'flowher::Loop' : function(params : ValueMap, context?: MQ.WorkerContext ): ValueMap{
+    console.log({ params, context });
+    return {};
+  },
+  'flowher::ArrayMap' : function(params : ValueMap, context?: MQ.WorkerContext ): ValueMap{
+    console.log({ params, context });
+    return {};
+  },
+  'flowher::Stop' : function( params : ValueMap, context?: MQ.WorkerContext ): ValueMap {
+    console.log({ params, context });
+    return { promise : context?.$queue.stop() };
+  },
+  'flowher::Pause' : function( params : ValueMap, context?: MQ.WorkerContext ): ValueMap {
+    console.log({ params, context });
+    return { promise : context?.$queue.pause() };
+  },
 }
 
 export { ResolversRegistry };
 
 // Run a flow and finish
 export class SubFlowResolver {
-  public async exec(params: ValueMap, context: ValueMap): Promise<ValueMap> {
+  public async exec(params: ValueMap, context: MQ.WorkerContext): Promise<ValueMap> {
 
     let flow = new FlowProducer(params.flowSpec);
 

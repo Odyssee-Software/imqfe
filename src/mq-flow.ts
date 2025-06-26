@@ -46,8 +46,8 @@ namespace FlowProducer{
    */
   export interface WorkerResolver{
     name : string;
-    params? : Record<string , string>;
-    results? : Record<string , string>;
+    params? : ValueMap;
+    results? : ValueMap;
   }
 
   /**

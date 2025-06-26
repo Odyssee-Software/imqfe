@@ -1,4 +1,5 @@
 import { ResolversRegistry } from "./resolver-registry";
+import { FlowProducer } from "./mq-flow";
 
 describe("ResolversRegistry", () => {
   describe("flowher::Noop", () => {
@@ -127,26 +128,26 @@ describe("ResolversRegistry", () => {
 
       const params = {
         flowSpec: {
-          tasks : {
+          tasks: {
             getDate: {
               provides: ['date'],
               resolver: {
                 name: 'flowher::Echo',
-                params : { in : { value : new Date() } },
+                params: { in: { value: new Date() } },
                 results: { out: 'date' }
               }
             },
-            formatDate : {
+            formatDate: {
               requires: ['date'],
               provides: ['formatted-date'],
               resolver: {
                 name: 'flowher::Echo',
-                params : {
-                  transform : {
-                    in : {
-                      year : '{{this.date.value.getDate()}}',
-                      month : '{{this.date.value.getMonth() + 1}}',
-                      day : '{{this.date.value.getFullYear()}}',
+                params: {
+                  transform: {
+                    in: {
+                      year: '{{this.date.value.getDate()}}',
+                      month: '{{this.date.value.getMonth() + 1}}',
+                      day: '{{this.date.value.getFullYear()}}',
                     },
                   }
                 },
@@ -155,13 +156,11 @@ describe("ResolversRegistry", () => {
             }
           }
         },
-        flowExpectedResults : [ 'formatted-date' ],
+        flowExpectedResults: ['formatted-date'],
       };
-      const context = { some: "context" };
 
       const result = await ResolversRegistry["flowher::SubFlow"](
-        params,
-        context
+        params
       );
 
       expect(result["formatted-date"]).toMatchObject({
@@ -178,11 +177,69 @@ describe("ResolversRegistry", () => {
         flowSpec: { some: "flow spec" },
         flowExpectedResults: { expected: "results" },
       };
-      const context = { some: "context" };
 
       await expect(
-        await ResolversRegistry["flowher::SubFlow"](params, context)
+        await ResolversRegistry["flowher::SubFlow"](params)
       ).toEqual({});
     });
+
   });
+
+  describe("flowher::Pause", () => {
+    
+    it("should call pause on the queue and return the promise", async () => {
+
+      let flow = new FlowProducer({
+        tasks: {
+          wait100ms: {
+            provides: ['wait100ms'],
+            requires: [],
+            resolver: {
+              name: "flowher::wait",
+              params: { ms : 100 },
+              results: {}
+            }
+          },
+          pauseTask: {
+            provides: [],
+            requires: ['wait100ms'],
+            resolver: {
+              name: "flowher::Pause",
+              params: {},
+              results: {}
+            }
+          }
+        }
+      });
+
+      return await new Promise<void>(( resolve ) => {
+
+        flow.run( {} , [] , {} , {} )
+        .then(() => {
+          expect(flow.queue.status).toBe("paused");
+          resolve();
+        })
+
+        expect(flow.queue.status).toBe("running");
+
+      })
+
+    });
+
+    // it("should return promise that resolves with pause result", async () => {
+    //   const mockPause = jest.fn().mockResolvedValue("paused");
+    //   const params = {};
+    //   const context = {
+    //     $queue: {
+    //       pause: mockPause
+    //     }
+    //   };
+
+    //   const result = ResolversRegistry["flowher::Pause"](params, context as any);
+    //   const promiseResult = await result.promise;
+
+    //   expect(promiseResult).toBe("paused");
+    // });
+  });
+
 });

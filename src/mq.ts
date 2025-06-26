@@ -75,9 +75,16 @@ class MQCallbackMap extends Map{
 
 namespace MQ{
 
+  export type WorkerContext = {
+    $queue : MQ;
+    $worker : WorkerCallback;
+  } & { [key:string] : any };
+
   export type Options = CreateQueueOptions & {
     name : string;
   };
+
+  export type status = 'running' | 'paused' | 'stopped';
 
   /**
    * Represents an in-memory queue structure for managing worker callbacks.
@@ -128,7 +135,8 @@ namespace MQ{
     executionDt : number | null;
     completedDt : number | null;
     queue:MQ;
-    start( callback?: ((error?: Error , result?:any) => void) | undefined ):void;
+    start( callback?: ((error?: Error , result?:any) => void) | undefined ):Promise<MQ.WorkerCallback<ValueMap> | null>;
+    abort():Promise<MQ.WorkerCallback<ValueMap> | null>;
     /** Method to track worker progress */
     follow( cb:( step : string , error:any , result:any ) => void ):void;
     /** Event handler for worker lifecycle events */
@@ -209,6 +217,8 @@ namespace MQ{
  * ```
 */
 class MQ extends Queue{
+
+  status : MQ.status = 'paused';
 
   name : string = "";
 
@@ -401,8 +411,30 @@ class MQ extends Queue{
     return [...this.jobs , ...this.results].find( (job) => job.id == jobId );
   }
 
-  start(callback?: ((error?: Error) => void) | undefined){ return super.start( callback ) }
-  stop(){ return super.stop() }
+  start(callback?: ((error?: Error) => void) | undefined){ 
+    if(this.status == "paused")return super.start( callback );
+    
+    return ;
+  }
+  pause(){
+    if( this.status == 'running' ){
+      this.status = 'paused';
+      return super.stop();
+    }
+
+    return ;
+  }
+  stop(){
+    if( this.status == 'running' ){
+      super.stop();
+      this.callbacks.dispose();
+      this.jobs.forEach(( job ) => { job.abort(); });
+      this.status = 'stopped';
+      this.currents.clear();
+    }
+
+    return ;
+  }
   end(error?: Error){ return super.end(error) }
 
   push( ...workers: MQ.WorkerCallback[] ):number{ return super.push( ...workers ); }
@@ -514,20 +546,20 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
           ) as Promise<MQ.WorkerCallback[]>;
 
         },
-        async start( callback?: ((error?: Error , result? : any) => void) | undefined) {
+        async start( callback?: ((error?: Error , result? : any) => void) | undefined):Promise<MQ.WorkerCallback<ValueMap> | null> {
 
           const worker = this as MQ.WorkerCallback;
 
           if( worker.success == true || worker.success == false ){
             logger.warn( `WorkerController ${worker.id} already started.` );
-            return;
+            return null;
           }
 
           const index = queue.jobs.findIndex(( job ) => job.id == worker.id );
 
           if( index == -1 ){
             logger.warn( `WorkerController ${worker.id} not found in queue.` );
-            return;
+            return null;
           }
 
           let executionDt = Date.now();
@@ -538,7 +570,10 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
               success : true,
               executionDt,
               completedDt : Date.now(),
-              data : await controller( properties ),
+              data : await controller( properties , {
+                get $queue(){ return workerController.queue },
+                get $worker(){ return workerController },
+              } ),
             });
           }
           catch( error:any ){
@@ -555,6 +590,42 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
           worker.queue.jobs = worker.queue.jobs.filter(( job ) => job.id != worker.id );
 
           if( typeof callback === 'function' )await callback( worker.error , worker.data );
+
+          return workerController;
+
+        },
+        async abort():Promise<MQ.WorkerCallback<ValueMap> | null>{
+
+          const worker = this as MQ.WorkerCallback;
+
+          if( worker.success != null ){
+            logger.warn( `WorkerController ${worker.id} already started.` );
+            return null;
+          }
+
+          const index = queue.jobs.findIndex(( job ) => job.id == worker.id );
+
+          if( index == -1 ){
+            logger.warn( `WorkerController ${worker.id} not found in queue.` );
+            return null;
+          }
+
+          let executionDt = Date.now();
+
+          Object.assign( workerController , {
+            status : 'error',
+            success : false,
+            executionDt,
+            completedDt : Date.now(),
+            error : {
+              message : 'Worker aborted',
+              code : 'WORKER_ABORTED',
+              stack : new Error().stack,
+            },
+          })
+
+          worker.queue.results.push( worker );
+          worker.queue.jobs = worker.queue.jobs.filter(( job ) => job.id != worker.id );
 
           return workerController;
 
@@ -588,7 +659,10 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
               success : true,
               executionDt,
               completedDt : Date.now(),
-              data : await controller( properties ),
+              data : await controller( properties , {
+                get $queue(){ return workerController.queue },
+                get $worker(){ return workerController },
+              } ),
           }))
         }
 
@@ -629,7 +703,10 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
               );
             }
             
-            let data = await controller( {...properties , ...workerController.properties} );
+            let data = await controller( {...properties , ...workerController.properties } , {
+              get $queue(){ return workerController.queue },
+              get $worker(){ return workerController },
+            } );
             next(Object.assign( workerController , {
               status : 'success',
               success : true,
