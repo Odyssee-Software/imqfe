@@ -362,7 +362,7 @@ console.log(result.outCollection);
 - [Guide MQ](./mq.md) : pour comprendre la file d’attente et l’exécution de jobs simples.
 - [Code source des résolveurs](../src/resolver-registry.ts)
 - [Tests unitaires](../src/mq-flow.test.ts)
-- [Exemples dans `demo/flow.js`](../demo/flow.js)
+- [Exemples dans `demo/flows/`](../demo/flows)
 
 ---
 
