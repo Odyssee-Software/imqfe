@@ -82,7 +82,7 @@ class FlowProducer{
   queue : MQ = null as any;
   specs : FlowProducer.FlowSpec = { tasks : {} };
   resolverRegistry = ResolversRegistry;
-
+  
   context : ValueMap = {};
 
   constructor( specs? : { tasks : Record< string , FlowProducer.TaskWorker > } ){

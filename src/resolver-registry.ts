@@ -157,7 +157,7 @@ namespace ResolversRegistry {
       /** Resolver to run the task. */
       resolver: string;
       /** Specification of the task to run. */
-      spec: FlowProducer.TaskWorker;
+      taskParams: ValueMap;
       /** Whether to run tasks in parallel. */
       parallel?: boolean;
       /** Whether to automatically map parameters to task. */
@@ -171,7 +171,7 @@ namespace ResolversRegistry {
       results: any[];
     };
 
-    export type Fn = (params: Input, context?: MQ.WorkerContext) => Output;
+    export type Fn = (params: Input, context?: MQ.WorkerContext) => Promise<Output>;
 
   }
 
@@ -249,7 +249,6 @@ interface ResolversRegistry {
 const ResolversRegistry:ResolversRegistry = {
   // Returns the input value or its transformation as the result.
   'imqfe::Echo' : function(params : ResolversRegistry.Echo.Input ): ResolversRegistry.Echo.Output{
-    console.log('Echo resolver called with params:', params);
     return { out: params.in };
   },
   // Does nothing.
@@ -292,7 +291,6 @@ const ResolversRegistry:ResolversRegistry = {
     })
   },
   'imqfe::Repeater'(params : ResolversRegistry.Repeater.Input , context?: MQ.WorkerContext ):Promise<ResolversRegistry.Repeater.Output>{
-    console.log({ params, context });
 
     return new Promise(async (resolve, reject) => {
       try{
@@ -313,22 +311,30 @@ const ResolversRegistry:ResolversRegistry = {
             Array.from(
               { length : params.count },
               ( _ , i ) => {
-                let _p = handleTransformProperties( params.taskParams || {} , { count : String(i) } );
-                return resolverFn( _p , context)
+                try{
+                  let _p = handleTransformProperties( params.taskParams || {} , { count : String(i) } );
+                  return resolverFn( _p , context)
+                }
+                catch( error ){
+                  return Promise.reject(error);
+                }
               }
             )
           )
         }
         else for await ( let i of Array.from({ length : params.count } , ( _ , i ) => i ) ){
-          let _p = handleTransformProperties( params.taskParams || {} , { count : String(i) } );
-          results.push(resolverFn( _p , context));
+          try{
+            let _p = handleTransformProperties( params.taskParams || {} , { count : String(i) } );
+            results.push(resolverFn( _p , context));
+          }
+          catch( error ){
+            return Promise.reject(error);
+          }
         }
 
         if( params.resolverAutomapResults ){
 
         }
-
-        console.log({ results });
 
         resolve({ results });
       }catch( error ){
@@ -339,20 +345,15 @@ const ResolversRegistry:ResolversRegistry = {
   },
   /// TODO : LOOP resolver
   'imqfe::Loop' : function(params : ResolversRegistry.Loop.Input, context?: MQ.WorkerContext ):Promise<ResolversRegistry.Loop.Output>{
-    console.log({ params, context });
     return new Promise(async (resolve) => {
 
       let outCollection:ResolversRegistry.Loop.Output["outCollection"] = [];
 
-      console.log({ params });
-
       if( params.parallel ){
         outCollection = await Promise.all(
           Array.from( params.inCollection , async ( item ) => {
-            console.log({ item , params : params.subtask });
             try{
               let taskParams = { [params.inItemName] : item };
-              console.log({ taskParams });
               return await new FlowProducer( { tasks : params.subtask } ).run( taskParams , [params.outItemName] , {} , context || {} as any )
             }
             catch( error ){
@@ -378,11 +379,45 @@ const ResolversRegistry:ResolversRegistry = {
     });
   },
   /// TODO : ArrayMap resolver
-  'imqfe::ArrayMap' : function(params : ResolversRegistry.ArrayMap.Input, context?: MQ.WorkerContext ):ResolversRegistry.ArrayMap.Output{
-    console.log({ params, context });
-    return {
-      results: []
-    };
+  'imqfe::ArrayMap' : function(params : ResolversRegistry.ArrayMap.Input, context?: MQ.WorkerContext ):Promise<ResolversRegistry.ArrayMap.Output>{
+    return new Promise(async (resolve) => {
+
+      let results:ResolversRegistry.ArrayMap.Output["results"] = [];
+      let resolverFn = (ResolversRegistry as any)[params.resolver] as Function;
+
+      if( params.parallel ){
+        results = await Promise.all(
+          Array.from(
+            params.params,
+            ( values , i  ) => {
+              try{
+                let taskParams = Object.assign( params.taskParams || {} , values );
+                let _p = handleTransformProperties( taskParams || {} , { count : String(i) } );
+                return resolverFn( _p , context)
+              }
+              catch( error ){
+                return Promise.reject(error);
+              }
+            }
+          )
+        )
+      }
+      else{
+        for await ( let i of Array.from( { length : params.params.length } , ( _ , i ) => i ) ){
+          let values = params.params[i];
+          try{
+            let taskParams = Object.assign( params.taskParams || {} , values );
+            let _p = handleTransformProperties( taskParams || {} , { count : String(i) } );
+            results.push(resolverFn( _p , context));
+          }
+          catch( error ){
+            return Promise.reject(error);
+          }
+        }
+      }
+
+      resolve({ results });
+    });
   },
   'imqfe::Stop' : function( params : ResolversRegistry.Stop.Input, context?: MQ.WorkerContext ):ResolversRegistry.Stop.Output {
     console.log({ params, context });

@@ -283,8 +283,6 @@ class MQ extends Queue{
 
     this.on('success' , async ( job:MQ.WorkerCallback ) => {
 
-      console.log( `MQ ${this.name} job success: ${job.id}` );
-
       if( !job )return ;
 
       let eventKey = `on:${job.id}:success`;
@@ -314,8 +312,6 @@ class MQ extends Queue{
     });
 
     this.on('error' , async ( job:MQ.WorkerCallback ) => {
-
-      console.log( `MQ ${this.name} job success: ${job.id}` );
 
       if( !job )return ;
 
@@ -741,15 +737,13 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
             //     { transform : workerController.resolver?.params.transform }
             //   );
             // }
-            console.log( { jobs , dependencies } );
             let _p = handleTransformProperties( workerController.properties || {} , dependencies );
-            console.log( { _p } );
             let data = await controller( _p , {
               get $queue(){ return workerController.queue },
               get $worker(){ return workerController },
             });
 
-            console.log( { data } );
+            // console.log( { data } );
 
             next(Object.assign( workerController , {
               status : 'success',

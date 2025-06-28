@@ -209,7 +209,6 @@ describe("ResolversRegistry", () => {
   });
 
   describe("imqfe::Loop", () => {
-    
     it("should process items sequentially when parallel is false", async () => {
       const params = {
         inCollection: [1, 2, 3],
@@ -277,8 +276,7 @@ describe("ResolversRegistry", () => {
       expect(result.outCollection).toEqual([]);
     });
 
-    it('should return outCollection with transformed items', async () => {
-
+    it("should return outCollection with transformed items", async () => {
       const params = {
         inCollection: [1, 2, 3],
         inItemName: "num",
@@ -290,9 +288,9 @@ describe("ResolversRegistry", () => {
             resolver: {
               name: "imqfe::Echo",
               params: {
-                transform : {
-                  in: "{{$flow.properties.num * 2}}"
-                }
+                transform: {
+                  in: "{{$flow.properties.num * 2}}",
+                },
               },
               results: { out: "result" },
             },
@@ -302,9 +300,97 @@ describe("ResolversRegistry", () => {
 
       const result = await ResolversRegistry["imqfe::Loop"](params);
 
-      expect(result.outCollection).toEqual([{ result : 2 }, { result : 4 }, { result : 6 }]);
-      
-    })
-    
+      expect(result.outCollection).toEqual([
+        { result: 2 },
+        { result: 4 },
+        { result: 6 },
+      ]);
+    });
+  });
+
+  describe("imqfe::ArrayMap", () => {
+
+    it("should map over array sequentially when parallel is false", async () => {
+
+      const params = {
+        params: [{ value: 1 }, { value: 2 }, { value: 3 }],
+        resolver: "imqfe::Echo",
+        taskParams : {
+          transform: {
+            in: { value : "{{value}}" },
+          },
+        },
+        parallel: false,
+      };
+
+      const result = await ResolversRegistry["imqfe::ArrayMap"](params);
+
+      expect(result).toHaveProperty("results");
+      expect(result.results).toEqual([
+        { out: { value: 1 } },
+        { out: { value: 2 } },
+        { out: { value: 3 } },
+      ]);
+    });
+
+    // it("should map over array in parallel when parallel is true", async () => {
+    //   const params = {
+    //     params: [{ value: 1 }, { value: 2 }, { value: 3 }],
+    //     resolver: "imqfe::Echo",
+    //     spec: {
+    //       resolver: {
+    //         name: "imqfe::Echo",
+    //       },
+    //     },
+    //     parallel: true,
+    //   };
+
+    //   const result = await ResolversRegistry["imqfe::ArrayMap"](params);
+
+    //   expect(result).toHaveProperty("results");
+    //   expect(result.results).toEqual([
+    //     { out: { value: 1 } },
+    //     { out: { value: 2 } },
+    //     { out: { value: 3 } },
+    //   ]);
+    // });
+
+    it("should handle empty params array", async () => {
+      const params = {
+        params: [],
+        resolver: "imqfe::Echo",
+        taskParams: {},
+      };
+
+      const result = await ResolversRegistry["imqfe::ArrayMap"](params);
+
+      expect(result.results).toEqual([]);
+    });
+
+    // it("should transform params with count index", async () => {
+    //   const params = {
+    //     params: [{ in : 10 }, { in : 20 }, { in : 30 }],
+    //     resolver: "imqfe::Echo",
+    //     spec: {
+    //       resolver: {
+    //         name: "imqfe::Echo",
+    //       },
+    //     },
+    //     parallel: true,
+    //   };
+
+    //   const result = await ResolversRegistry["imqfe::ArrayMap"](params);
+
+    //   expect(result.results[0]).toMatchObject({
+    //     out: { base: 10, count: "0" },
+    //   });
+    //   expect(result.results[1]).toMatchObject({
+    //     out: { base: 20, count: "1" },
+    //   });
+    //   expect(result.results[2]).toMatchObject({
+    //     out: { base: 30, count: "2" },
+    //   });
+    // });
+  
   });
 });

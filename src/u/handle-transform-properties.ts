@@ -26,7 +26,6 @@ export function handleTransformProperties( properties : ValueMap & { transform ?
 
   if( typeof transform == 'object' ){
     let dataset = Object.assign( input || {} , rest );
-    console.log({ dataset });
     return simpleTransform( dataset , { transform } );
   }
   else return Object.assign( input || {} , properties );
