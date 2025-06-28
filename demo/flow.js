@@ -1,7 +1,8 @@
+const { transform } = require('zod/v4');
 const { FlowProducer } = require('../dist');
 
 // // Exemple 1 : Tâche Echo ajoutée dynamiquement
-// // Ajoute une tâche à la volée dans un flow, qui retourne simplement la valeur passée en entrée ('test').
+// // // Ajoute une tâche à la volée dans un flow, qui retourne simplement la valeur passée en entrée ('test').
 // (async () => {
 
 //   let flow = new FlowProducer();
@@ -10,7 +11,7 @@ const { FlowProducer } = require('../dist');
 //     provides: ['output'],
 //     requires: [],
 //     resolver: {
-//       name: 'flowher::Echo',
+//       name: 'imqfe::Echo',
 //       params: { in: 'test' },
 //       results: { out: 'output' }
 //     }
@@ -22,7 +23,35 @@ const { FlowProducer } = require('../dist');
 //     {} // context
 //   );
 
-//   console.log({ echo_result : result.output })
+//   console.log({ queue : flow.queue , echo_result : result })
+
+// })();
+
+// (async () => {
+
+//   let flow = new FlowProducer();
+
+//   flow.add('echoTask', {
+//     provides: ['output'],
+//     requires: [],
+//     resolver: {
+//       name: 'imqfe::Echo',
+//       params: {
+//         transform : {
+//           in : `{{$flow.properties.in}}`
+//         }
+//       },
+//       results: { out: 'output' }
+//     }
+//   });
+
+//   const result = await flow.run(
+//     { in : { value : 'test' } }, // params  
+//     ['output'], // expectedOutputs
+//     {} // context
+//   );
+
+//   console.log({ queue : flow.queue , echo_result : result })
 
 // })();
 
@@ -36,7 +65,7 @@ const { FlowProducer } = require('../dist');
 //         provides: ['output'],
 //         requires: [],
 //         resolver: {
-//           name: 'flowher::Echo',
+//           name: 'imqfe::Echo',
 //           params: { in: 'test' },
 //           results: { out: 'output' }
 //         }
@@ -63,7 +92,7 @@ const { FlowProducer } = require('../dist');
 //       getDate : {
 //         provides: ['date'],
 //         resolver: {
-//           name: 'flowher::Echo',
+//           name: 'imqfe::Echo',
 //           params: { in: { value: new Date() } },
 //           results: { out: 'date' }
 //         }
@@ -72,7 +101,7 @@ const { FlowProducer } = require('../dist');
 //         requires: ['date'],
 //         provides: ['wait1000ms'],
 //         resolver : {
-//           name: 'flowher::Wait',
+//           name: 'imqfe::Wait',
 //           params : {
 //             ms : 1000,
 //             result : { value : 1000 }
@@ -84,7 +113,7 @@ const { FlowProducer } = require('../dist');
 //         requires: ['date', 'wait1000ms'],
 //         provides: ['delta'],
 //         resolver : {
-//           name: 'flowher::Echo',
+//           name: 'imqfe::Echo',
 //           params: {
 //             transform: {
 //               in: {
@@ -120,7 +149,7 @@ const { FlowProducer } = require('../dist');
 //     provides: ['output'],
 //     requires: [],
 //     resolver: {
-//       name: 'flowher::Echo',
+//       name: 'imqfe::Echo',
 //       params: { in: 'test' },
 //       results: { out: 'output' }
 //     }
@@ -145,7 +174,7 @@ const { FlowProducer } = require('../dist');
 //       'step-a': {
 //         provides: ['A'],
 //         resolver: {
-//           name: 'flowher::Echo',
+//           name: 'imqfe::Echo',
 //           params : { in : { value : 'a' } },
 //           results: { out : 'A' }
 //         },
@@ -153,7 +182,7 @@ const { FlowProducer } = require('../dist');
 //       'step-b': {
 //         provides: ['B'],
 //         resolver: {
-//           name: 'flowher::Echo',
+//           name: 'imqfe::Echo',
 //           params : { in : { value : 'b' } },
 //           results: { out : 'B' }
 //         },
@@ -162,12 +191,12 @@ const { FlowProducer } = require('../dist');
 //         requires: ['A', 'B'],
 //         provides: ['C'],
 //         resolver: {
-//           name: 'flowher::Echo',
+//           name: 'imqfe::Echo',
 //           params : {
 //             transform : {
 //               in : {
-//                 'step-1' : '{{this.A}}',
-//                 'step-2' : '{{this.B}}',
+//                 'step-1' : '{{this.requires.A}}',
+//                 'step-2' : '{{this.requires.B}}',
 //               }
 //             }
 //           },
@@ -182,8 +211,8 @@ const { FlowProducer } = require('../dist');
 
 // })();
 
-// // Exemple 6 : Sous-flow (SubFlow) imbriqué
-// // Définit une tâche qui exécute un sous-flow interne pour obtenir et formater une date, illustrant la composition de flows.
+// // // Exemple 6 : Sous-flow (SubFlow) imbriqué
+// // // Définit une tâche qui exécute un sous-flow interne pour obtenir et formater une date, illustrant la composition de flows.
 // (async () => {
 
 //   let flow = new FlowProducer({
@@ -191,14 +220,14 @@ const { FlowProducer } = require('../dist');
 //       getFullDate: {
 //         provides: ['full-date'],
 //         resolver: { 
-//           name: 'flowher::SubFlow',
+//           name: 'imqfe::SubFlow',
 //           params: {
 //             flowSpec : {
 //               tasks : {
 //                 getDate: {
 //                   provides: ['date'],
 //                   resolver: {
-//                     name: 'flowher::Echo',
+//                     name: 'imqfe::Echo',
 //                     params : { in : { value : new Date() } },
 //                     results: { out: 'date' }
 //                   }
@@ -207,13 +236,13 @@ const { FlowProducer } = require('../dist');
 //                   requires: ['date'],
 //                   provides: ['formatted-date'],
 //                   resolver: {
-//                     name: 'flowher::Echo',
+//                     name: 'imqfe::Echo',
 //                     params : {
 //                       transform : {
 //                         in : {
-//                           year : '{{this.date.value.getDate()}}',
-//                           month : '{{this.date.value.getMonth() + 1}}',
-//                           day : '{{this.date.value.getFullYear()}}',
+//                           year : '{{this.requires.date.value.getDate()}}',
+//                           month : '{{this.requires.date.value.getMonth() + 1}}',
+//                           day : '{{this.requires.date.value.getFullYear()}}',
 //                         },
 //                       }
 //                     },
@@ -234,29 +263,117 @@ const { FlowProducer } = require('../dist');
 
 // })();
 
-(() => {
+// (async () => {
+
+//   let flow = new FlowProducer({
+//     tasks: {
+//       wait100ms: {
+//         provides: ['stop'],
+//         requires: [],
+//         resolver: {
+//           name: "imqfe::Stop",
+//         }
+//       },
+//       pauseTask: {
+//         provides: [ 'echo' ],
+//         requires: ['stop'],
+//         resolver: {
+//           name: "imqfe::Echo",
+//           params: {
+//             in : { value : 'test' }
+//           }
+//         }
+//       }
+//     }
+//   });
+  
+//   let result = await flow.run( {} , ['echo'] , {} , {} );
+//   // will be empty because the flow is stopped before the echoTask can run
+//   console.log({ result });
+
+//   flow.queue.results.flat(1).forEach(( result ) => {
+//     // here we can see the results of the flow execution
+//     console.log({result})
+//   })
+
+// })();
+
+// (async () => {
+
+//   let flow = new FlowProducer({
+//     tasks: {
+//       repeat: {
+//         provides: ['repeat-echo'],
+//         resolver: {
+//           name: "imqfe::Repeater",
+//           params: {
+//             count: 330,
+//             resolver : 'imqfe::Echo',
+//             parallel : false,
+//             taskParams: {
+//               in : { value : 'echo' },
+//               transform : {
+//                 in : { value : '{{this.in.value}} {{count}}' }
+//               }
+//             },
+//           }
+//         }
+//       }
+//     }
+//   });
+  
+//   let result = await flow.run( {} , ['repeat-echo'] , {} , {} );
+//   // will be empty because the flow is stopped before the echoTask can run
+//   console.log({ result : result.results });
+
+//   result.results.forEach(( result ) => {
+//     // here we can see the results of the flow execution
+//     console.log({result})
+//   })
+
+// })();
+
+(async () => {
 
   let flow = new FlowProducer({
     tasks: {
-      wait100ms: {
-        provides: ['wait100ms'],
-        requires: [],
+      loop: {
+        requires: ['data'],
+        provides: ['results'],
         resolver: {
-          name: "flowher::Wait",
-          params: { ms : 100 },
-        }
-      },
-      pauseTask: {
-        provides: [],
-        requires: ['wait100ms'],
-        resolver: {
-          name: "flowher::Pause",
-          params: {}
-        }
+          name: 'imqfe::Loop',
+          params: {
+            inCollection: Array.from({ length : 10 } , (_ , i) => i ),
+            inItemName: "in",
+            outItemName: "result",
+            subtask: {
+              multiply: {
+                provides: ["result"],
+                resolver: {
+                  name: "imqfe::Echo",
+                  params: {
+                    transform: {
+                      in: {
+                        value: '{{$flow.properties.in}}',
+                      }
+                    }
+                  },
+                  results: { out: "echo" },
+                },
+              },
+            },
+            parallel: true,
+          },
+        },
+        results: { out: 'echo' }
       }
     }
   });
-  
-  flow.run( {} , [''] , {} , {} )
 
-})();
+  let result = await flow.run( {} , ['results'] , {} , {} );
+
+  result.outCollection.forEach(( result ) => {
+    console.log(result);
+  });
+  
+})()

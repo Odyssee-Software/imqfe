@@ -226,16 +226,16 @@ describe('Memory Queue Tests', () => {
 
       const date = new Date();
 
-      const getDate = WorkerController(async () => date, 
+      const getDate = WorkerController(async () => ({ value : date }), 
         {} , 
         { provides : ['date'] }
       );
 
-      const formatDate = WorkerController(async ({ '0': date }: { '0': Date }) => {
+      const formatDate = WorkerController(async ( properties : any ) => {
         return {
-          year: date.getFullYear(),
-          month: date.getMonth() + 1,
-          day: date.getDate()
+          year : properties?.requires?.value.getFullYear(),
+          month : properties?.requires?.value.getMonth() + 1, // Months are zero-based
+          day : properties?.requires?.value.getDate(),
         };
       }, {} , 
       {
@@ -248,7 +248,7 @@ describe('Memory Queue Tests', () => {
         queue.start(() => {
           try {
             expect(worker1.status).toBe('success');
-            expect(worker1.data).toBe(date);
+            expect(worker1.data).toMatchObject({ value : date });
 
             expect(worker2.status).toBe('success');
             expect(worker2.data).toEqual({

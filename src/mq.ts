@@ -2,7 +2,7 @@ import { Queue , QueueWorker , crypto , z , logger , yaml , CreateQueueOptions }
 import { ValueMap } from '@types';
 
 import { resolverExpectedResults } from './u/resolver-expected-results';
-import { simpleTransform } from './u/simple-transform';
+import { handleTransformProperties } from '@u/handle-transform-properties';
 
 /**
  * Zod schema for validating WorkerCallback functions.
@@ -411,7 +411,7 @@ class MQ extends Queue{
     return [...this.jobs , ...this.results].find( (job) => job.id == jobId );
   }
 
-  start(callback?: ((error?: Error) => void) | undefined){ 
+  start( callback?: ((error?: Error) => void) | undefined ){ 
     if(this.status == "paused")return super.start( callback );
     
     return ;
@@ -424,8 +424,9 @@ class MQ extends Queue{
 
     return ;
   }
+  
   stop(){
-    if( this.status == 'running' ){
+    if( 'running' in this && this.running ){
       super.stop();
       this.callbacks.dispose();
       this.jobs.forEach(( job ) => { job.abort(); });
@@ -655,12 +656,23 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
          * @throws {Error} Any error that occurs during controller execution will be propagated
          */
         async function workerExecNoDependencies(){
+
+          let dependencies = {
+            $flow : {
+              properties : '$params' in workerController.queue ? workerController.queue['$params'] : {},
+              context : '$context' in workerController.queue ? workerController.queue['$context'] : {},
+            },
+            requires : {}
+          };
+
+          let _p = handleTransformProperties( workerController.properties || {} , dependencies );
+
           next(Object.assign( workerController , {
               status : 'success',
               success : true,
               executionDt,
               completedDt : Date.now(),
-              data : await controller( properties , {
+              data : await controller( _p , {
                 get $queue(){ return workerController.queue },
                 get $worker(){ return workerController },
               } ),
@@ -680,34 +692,65 @@ function WorkerController( controller:any , properties : ValueMap , options ? : 
          */
         async function workerExecWithDependencies( jobs:MQ.WorkerCallback[] ){
 
-          let properties = Object.fromEntries( 
-            new Map(
-              jobs.map(( job , i ) => {
-                return [ 
-                  i , 
-                  job.resolver?.results 
-                  ? resolverExpectedResults( job.data , job.resolver?.results ) 
-                  : (job.data || null)
-                ];
-              } ) 
-            ) 
-          );
+          /// TODO : Simplifier cette partie en essayant pas de merge les précédents résultats
+          /// - Prévoir la possibilité de faire passer les datas précédentes dans un 3eme paramètres pour les resolvers
+
+          // let properties = Object.fromEntries( 
+          //   new Map(
+          //     jobs.map(( job , i ) => {
+          //       return [ 
+          //         i , 
+          //         job.resolver?.results 
+          //         ? resolverExpectedResults( job.data , job.resolver?.results ) 
+          //         : (job.data || null)
+          //       ];
+          //     } ) 
+          //   ) 
+          // );
+
+          let dependencies = {
+            $flow : {
+              properties : '$params' in workerController.queue ? workerController.queue['$params'] : {},
+              context : '$context' in workerController.queue ? workerController.queue['$context'] : {},
+            },
+            requires : Object.values(
+              Object.fromEntries( 
+                new Map(
+                  jobs.map(( job , i ) => {
+                    return [ 
+                      i , 
+                      job.resolver?.results 
+                      ? resolverExpectedResults( job.data , job.resolver?.results ) 
+                      : (job.data || null)
+                    ];
+                  } ) 
+                ) 
+              )
+            ).reduce(( obj:Record<string , any> , current:any ) => Object.assign( obj , current ) , {})
+          }
+
+          // console.log({ properties })
 
           try{
 
-            let dataset = Object.values(properties).reduce(( obj:Record<string , any> , current:any ) => Object.assign( obj , current ) , {});
+            // let dataset = Object.values(properties).reduce(( obj:Record<string , any> , current:any ) => Object.assign( obj , current ) , {});
 
-            if( workerController.resolver?.params && 'transform' in workerController.resolver?.params ){
-              properties = simpleTransform( 
-                dataset,
-                { transform : workerController.resolver?.params.transform }
-              );
-            }
-            
-            let data = await controller( {...properties , ...workerController.properties } , {
+            // if( workerController.resolver?.params && 'transform' in workerController.resolver?.params ){
+            //   properties = simpleTransform( 
+            //     dataset,
+            //     { transform : workerController.resolver?.params.transform }
+            //   );
+            // }
+            console.log( { jobs , dependencies } );
+            let _p = handleTransformProperties( workerController.properties || {} , dependencies );
+            console.log( { _p } );
+            let data = await controller( _p , {
               get $queue(){ return workerController.queue },
               get $worker(){ return workerController },
-            } );
+            });
+
+            console.log( { data } );
+
             next(Object.assign( workerController , {
               status : 'success',
               success : true,

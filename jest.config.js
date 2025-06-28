@@ -6,6 +6,7 @@ module.exports = {
     '^@depts$': '<rootDir>/src/depts.ts',
     '^@envs$': '<rootDir>/src/envs.ts',
     '^@types$': '<rootDir>/src/types.ts',
+    '^@u/(.*)$': '<rootDir>/src/u/$1'
   },
   reporters: [
 			"default",

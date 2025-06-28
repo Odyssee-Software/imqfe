@@ -67,7 +67,7 @@ const {  WorkerController , MQ } = require('../dist');
 
   let [ getDate ] = queue.enqueue(
     WorkerController( async ( props ) => {
-      return new Date();
+      return { value : new Date() };
     }, 
     null,
     {
@@ -76,11 +76,12 @@ const {  WorkerController , MQ } = require('../dist');
   ));
 
   let [ formatDate ] = queue.enqueue(
-    WorkerController( async ( { '0' : date } ) => {
+    WorkerController( async ( properties ) => {
+      console.log({ properties });
       return {
-        year : date.getFullYear(),
-        month : date.getMonth() + 1, // Months are zero-based
-        day : date.getDate(),
+        year : properties?.requires?.value.getFullYear(),
+        month : properties?.requires?.value.getMonth() + 1, // Months are zero-based
+        day : properties?.requires?.value.getDate(),
       };
     }, 
     null,

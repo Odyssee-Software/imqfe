@@ -50,7 +50,7 @@ describe('FlowProducer', () => {
         provides: ['output'],
         requires: [],
         resolver: {
-          name: 'flowher::Echo',
+          name: 'imqfe::Echo',
           params: { in: 'test' }
         }
       });
@@ -69,7 +69,7 @@ describe('FlowProducer', () => {
             provides: ['output'],
             requires: [],
             resolver: {
-              name: 'flowher::Echo',
+              name: 'imqfe::Echo',
               params: { in: 'test' },
               results: { out: 'output' }
             }
@@ -99,7 +99,7 @@ describe('FlowProducer', () => {
         provides: ['output'],
         requires: [],
         resolver: {
-          name: 'flowher::Echo',
+          name: 'imqfe::Echo',
           params: { in: 'test' },
           results: { out: 'output' }
         }

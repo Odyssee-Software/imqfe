@@ -2,6 +2,193 @@ import type { ValueMap } from '@types';
 
 import type { MQ } from './mq';
 import { FlowProducer } from './mq-flow';
+// import { simpleTransform } from '@u/simple-transform';
+import { handleTransformProperties } from '@u/handle-transform-properties';
+
+namespace ResolversRegistry {
+
+  export namespace Echo{
+
+    export type Input = { 
+      /** Input value to echo back. */
+      in : any 
+    };
+
+    export type Output = { 
+      /** Output value that is the same as input. */
+      out : any 
+    };
+
+    export type Fn = (params: Input , context?: MQ.WorkerContext) => Output;
+
+  }
+
+  export namespace Noop{
+
+    export type Input = ValueMap;
+
+    export type Output = ValueMap;
+
+    export type Fn = (params: Input) => Output;
+
+  }
+
+  export namespace ThrowError {
+    
+    export type Input = { message?: string };
+
+    export type Output = ValueMap;
+
+    export type Fn = (params: Input , context?: MQ.WorkerContext) => Output;
+
+  }
+
+  export namespace Conditional {
+
+    export type Input = {
+      /** Condition to evaluate. */
+      condition: boolean;
+      /** Result to return if condition is true. */
+      trueResult: ValueMap;
+      /** Result to return if condition is false. */
+      falseResult: ValueMap;
+    };
+
+    export type Output = {
+      /** Result to return if condition is true. */
+      onTrue?: ValueMap;
+      /** Result to return if condition is false. */
+      onFalse?: ValueMap;
+    };
+
+    export type Fn = (params: Input , context?: MQ.WorkerContext) => Output;
+
+  }
+
+  export namespace Wait {
+
+    export type Input = {
+      /** Number of milliseconds to wait. */
+      ms: number;
+      /** Result to return after waiting. */
+      result?: ValueMap;
+    };
+
+    export type Output = {
+      /** Result after waiting. */
+      result?: ValueMap;
+    };
+
+    export type Fn = (params: Input , context?: MQ.WorkerContext) => Promise<Output>;
+
+  }
+
+  export namespace SubFlow {
+
+    export type Input = {
+      /** Specification of the flow to run. */
+      flowSpec: FlowProducer.FlowSpec;
+      flowExpectedResults?: string[];
+    };
+
+    export type Output = ValueMap;
+
+    export type Fn = (params: Input, context?: MQ.WorkerContext) => Promise<Output>;
+
+  }
+
+  export namespace Repeater {
+
+    export type Input = {
+      count: number;
+      /** Resolver to run the task. */
+      resolver: string;
+      /** Specification of the task to run. */
+      taskSpec: FlowProducer.FlowSpec["tasks"];
+      /** Parameters to supply to the task. */
+      taskParams?: ValueMap;
+      /** Whether to run tasks in parallel. */
+      parallel?: boolean;
+      /** Whether to automatically map parameters to task. */
+      resolverAutomapParams?: boolean;
+      /** Whether to automatically map results from task. */
+      resolverAutomapResults?: boolean;
+    };
+
+    export type Output = ValueMap;
+
+    export type Fn = (params: Input, context?: MQ.WorkerContext) => Output;
+
+  }
+
+  export namespace Loop {
+
+    export type Input = {
+      /** Input collection to iterate over. */
+      inCollection: any[];
+      /** Name of the input item in the collection. */
+      inItemName: string;
+      /** Name of the output item in the collection. */
+      outItemName: string;
+      /** Specification of the subtask to run for each item. */
+      subtask: ValueMap;
+      /** Whether to run tasks in parallel. */
+      parallel?: boolean;
+      /** Whether to automatically map parameters to task. */
+      automapParams?: boolean;
+      /** Whether to automatically map results from task. */
+      automapResults?: boolean;
+    };
+
+    export type Output = {
+      /** Collection of results from the task executions. */
+      outCollection: any[];
+    };
+
+    export type Fn = (params: Input, context?: MQ.WorkerContext) => Promise<Output>;
+
+  }
+
+  export namespace ArrayMap {
+
+    export type Input = {
+      /** Array of Key-Value objects with params. */
+      params: any[];
+      /** Resolver to run the task. */
+      resolver: string;
+      /** Specification of the task to run. */
+      spec: FlowProducer.TaskWorker;
+      /** Whether to run tasks in parallel. */
+      parallel?: boolean;
+      /** Whether to automatically map parameters to task. */
+      automapParams?: boolean;
+      /** Whether to automatically map results from task. */
+      automapResults?: boolean;
+    };
+
+    export type Output = {
+      /** Array of results from the task executions. */
+      results: any[];
+    };
+
+    export type Fn = (params: Input, context?: MQ.WorkerContext) => Output;
+
+  }
+
+  export namespace Stop {
+
+    export type Input = ValueMap;
+
+    export type Output = {
+      /** Promise that resolves when the flow stops. */
+      promise?: Promise<void>;
+    };
+
+    export type Fn = (params: Input, context?: MQ.WorkerContext) => Output;
+
+  }
+
+}
 
 /**
  * Registry of built-in flow resolvers.
@@ -9,100 +196,89 @@ import { FlowProducer } from './mq-flow';
  * @namespace ResolversRegistry
  */
 interface ResolversRegistry {
+
   /**
    * Returns the input value or its transformation as the result.
    * @param {ValueMap} params - Parameters object containing 'in' value to echo
    * @returns {ValueMap} Object containing 'out' property with the input value
    */
-  'flowher::Echo': (params: ValueMap) => ValueMap;
+  'imqfe::Echo': ResolversRegistry.Echo.Fn;
 
   /**
    * Does nothing and returns an empty object.
    * @returns {ValueMap} Empty object
    */
-  'flowher::Noop': () => ValueMap;
+  'imqfe::Noop': ResolversRegistry.Noop.Fn;
 
   /**
    * Throws an error with a specified message.
    * @param {ValueMap} params - Parameters object containing optional 'message' string
    * @throws {Error} Always throws with either specified message or default message
    */
-  'flowher::ThrowError': (params: ValueMap) => ValueMap;
+  'imqfe::ThrowError': ResolversRegistry.ThrowError.Fn;
 
   /**
    * Provides one of two possible results depending on a given condition.
    * @param {ValueMap} params - Parameters containing 'condition', 'trueResult', and 'falseResult'
    * @returns {ValueMap} Object with either 'onTrue' or 'onFalse' property based on condition
    */
-  'flowher::Conditional': (params: ValueMap) => ValueMap;
+  'imqfe::Conditional': ResolversRegistry.Conditional.Fn;
 
   /**
    * Waits for specified milliseconds and returns the specified result.
    * @param {ValueMap} params - Parameters containing 'ms' for delay and 'result' for return value
    * @returns {Promise<ValueMap>} Promise resolving to object with 'result' property after delay
    */
-  'flowher::Wait': (params: ValueMap) => Promise<ValueMap>;
+  'imqfe::Wait': ResolversRegistry.Wait.Fn;
 
-  /**
-   * Executes a sub-flow within the current flow.
-   */
-  'flowher::SubFlow': (params: ValueMap, context?: MQ.WorkerContext ) => Promise<ValueMap>;
+  /** Executes a sub-flow within the current flow. */
+  'imqfe::SubFlow': ResolversRegistry.SubFlow.Fn;
 
-  /**
-   * Repeats execution of a flow segment.
-   */
-  'flowher::Repeater': (params: ValueMap, context?: MQ.WorkerContext ) => ValueMap;
+  /** Repeats execution of a flow segment. */
+  'imqfe::Repeater': ResolversRegistry.Repeater.Fn;
 
-  'flowher::Loop': (params: ValueMap, context?: MQ.WorkerContext ) => ValueMap;
+  'imqfe::Loop': ResolversRegistry.Loop.Fn;
 
-  /**
-   * Maps over an array applying a flow to each element.
-   */
-  'flowher::ArrayMap': (params: ValueMap, context?: MQ.WorkerContext ) => ValueMap;
+  /** Maps over an array applying a flow to each element. */
+  'imqfe::ArrayMap': ResolversRegistry.ArrayMap.Fn;
 
-  /**
-   * Stops the current flow execution.
-   */
-  'flowher::Stop': (params: ValueMap, context?: MQ.WorkerContext ) => ValueMap;
-
-  /**
-   * Pauses the current flow execution.
-   */
-  'flowher::Pause': (params: ValueMap, context?: MQ.WorkerContext ) => ValueMap;
+  /** Stops the current flow execution. */
+  'imqfe::Stop': ResolversRegistry.Stop.Fn;
 }
 
 const ResolversRegistry:ResolversRegistry = {
   // Returns the input value or its transformation as the result.
-  'flowher::Echo' : function(params: ValueMap): ValueMap {
+  'imqfe::Echo' : function(params : ResolversRegistry.Echo.Input ): ResolversRegistry.Echo.Output{
+    console.log('Echo resolver called with params:', params);
     return { out: params.in };
   },
   // Does nothing.
-  'flowher::Noop' : function(): ValueMap {
-    return {};
+  'imqfe::Noop' : function(params : ResolversRegistry.Noop.Input ): ResolversRegistry.Noop.Output{
+    return params;
   },
   // Throws an error with a specified message.
-  'flowher::ThrowError' : function(params: ValueMap): ValueMap {
+  'imqfe::ThrowError' : function(params: ResolversRegistry.ThrowError.Input ): ResolversRegistry.ThrowError.Output {
     throw new Error(typeof params.message !== 'undefined' ? params.message : 'ThrowErrorResolver resolver has thrown an error');
   },
   // Provides one of two possible results depending of a given condition.
-  'flowher::Conditional' : function(params: ValueMap): ValueMap {
+  'imqfe::Conditional' : function(params: ResolversRegistry.Conditional.Input ): ResolversRegistry.Conditional.Output {
     return params.condition ? { onTrue: params.trueResult } : { onFalse: params.falseResult };
   },
   // Waits for ms milliseconds and finish returning the specified result.
-  'flowher::Wait' : function(params: ValueMap): Promise<ValueMap> {
+  'imqfe::Wait' : function(params: ResolversRegistry.Wait.Input ): Promise<ResolversRegistry.Wait.Output> {
     return new Promise<ValueMap>(resolve => {
       setTimeout(() => {
         resolve({ result: params?.result || null });
       }, params.ms);
     });
   },
-  'flowher::SubFlow' : function(params: ValueMap, context?: MQ.WorkerContext ):Promise<ValueMap>{
+  'imqfe::SubFlow' : function(params: ResolversRegistry.SubFlow.Input, context?: MQ.WorkerContext ):Promise<ResolversRegistry.SubFlow.Output>{
     return new Promise(( resolve , reject ) => {
       let flow = new FlowProducer(params.flowSpec);
 
       flow.run(
         params.flowSpec,
-        params.flowExpectedResults,
+        params.flowExpectedResults || [],
         {},
         context || {},
       )
@@ -115,46 +291,123 @@ const ResolversRegistry:ResolversRegistry = {
       
     })
   },
-  'flowher::Repeater' : function(params : ValueMap, context?: MQ.WorkerContext ): ValueMap{
+  'imqfe::Repeater'(params : ResolversRegistry.Repeater.Input , context?: MQ.WorkerContext ):Promise<ResolversRegistry.Repeater.Output>{
     console.log({ params, context });
-    return {};
+
+    return new Promise(async (resolve, reject) => {
+      try{
+
+        if( !params.resolver ){
+          return reject(new Error('Repeater resolver requires a resolver name.'));
+        }
+
+        if( params.resolver in ResolversRegistry === false || typeof (ResolversRegistry as any)[params.resolver] !== 'function' ){
+          return reject(new Error(`Repeater resolver '${params.resolver}' not found.`));
+        }
+
+        let resolverFn = (ResolversRegistry as any)[params.resolver] as Function;
+        let results = [];
+
+        if( params.parallel ){
+          results = await Promise.all(
+            Array.from(
+              { length : params.count },
+              ( _ , i ) => {
+                let _p = handleTransformProperties( params.taskParams || {} , { count : String(i) } );
+                return resolverFn( _p , context)
+              }
+            )
+          )
+        }
+        else for await ( let i of Array.from({ length : params.count } , ( _ , i ) => i ) ){
+          let _p = handleTransformProperties( params.taskParams || {} , { count : String(i) } );
+          results.push(resolverFn( _p , context));
+        }
+
+        if( params.resolverAutomapResults ){
+
+        }
+
+        console.log({ results });
+
+        resolve({ results });
+      }catch( error ){
+        console.error('Error in Repeater resolver:', error);
+        reject(error);
+      }
+    })
   },
-  'flowher::Loop' : function(params : ValueMap, context?: MQ.WorkerContext ): ValueMap{
+  /// TODO : LOOP resolver
+  'imqfe::Loop' : function(params : ResolversRegistry.Loop.Input, context?: MQ.WorkerContext ):Promise<ResolversRegistry.Loop.Output>{
     console.log({ params, context });
-    return {};
+    return new Promise(async (resolve) => {
+
+      let outCollection:ResolversRegistry.Loop.Output["outCollection"] = [];
+
+      console.log({ params });
+
+      if( params.parallel ){
+        outCollection = await Promise.all(
+          Array.from( params.inCollection , async ( item ) => {
+            console.log({ item , params : params.subtask });
+            try{
+              let taskParams = { [params.inItemName] : item };
+              console.log({ taskParams });
+              return await new FlowProducer( { tasks : params.subtask } ).run( taskParams , [params.outItemName] , {} , context || {} as any )
+            }
+            catch( error ){
+              return Promise.reject(error);
+            }
+          })
+        )
+      }
+      else {
+        for await ( let item of params.inCollection ){
+          try{
+            let taskParams = { [params.inItemName] : item };
+            let taskResult = await new FlowProducer( { tasks : params.subtask } ).run( taskParams , [params.outItemName] , {} , context || {} as any );
+            outCollection.push( taskResult );
+          }
+          catch( error ){
+            return Promise.reject(error);
+          }
+        }
+      }
+
+      resolve({ outCollection });
+    });
   },
-  'flowher::ArrayMap' : function(params : ValueMap, context?: MQ.WorkerContext ): ValueMap{
+  /// TODO : ArrayMap resolver
+  'imqfe::ArrayMap' : function(params : ResolversRegistry.ArrayMap.Input, context?: MQ.WorkerContext ):ResolversRegistry.ArrayMap.Output{
     console.log({ params, context });
-    return {};
+    return {
+      results: []
+    };
   },
-  'flowher::Stop' : function( params : ValueMap, context?: MQ.WorkerContext ): ValueMap {
+  'imqfe::Stop' : function( params : ResolversRegistry.Stop.Input, context?: MQ.WorkerContext ):ResolversRegistry.Stop.Output {
     console.log({ params, context });
-    return { promise : context?.$queue.stop() };
-  },
-  'flowher::Pause' : function( params : ValueMap, context?: MQ.WorkerContext ): ValueMap {
-    console.log({ params, context });
-    return { promise : context?.$queue.pause() };
-  },
+    return { promise : Promise.resolve( context?.$queue.stop() ) };
+  }
 }
 
 export { ResolversRegistry };
 
-// Run a flow and finish
-export class SubFlowResolver {
-  public async exec(params: ValueMap, context: MQ.WorkerContext): Promise<ValueMap> {
+// // Run a flow and finish
+// export class SubFlowResolver {
+//   public async exec(params: ValueMap, context: MQ.WorkerContext): Promise<ValueMap> {
 
-    let flow = new FlowProducer(params.flowSpec);
+//     let flow = new FlowProducer(params.flowSpec);
 
-    let flowResult = await flow.run(
-      params.flowSpec,
-      params.flowExpectedResults,
-      {},
-      context,
-    );
+//     let flowResult = await flow.run(
+//       params.flowSpec,
+//       params.flowExpectedResults,
+//       {},
+//       context,
+//     );
 
-    return { flowResult };
-  }
-}
+//     return { flowResult };
+//   }
+// }
 
 // // Run a task multiple times and finishes returning an array with all results.
 // // If one execution fails, the repeater resolver ends with an exception (this is valid for both parallel and not parallel modes).

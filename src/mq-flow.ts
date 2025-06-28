@@ -59,8 +59,8 @@ namespace FlowProducer{
    * @property {WorkerResolver} resolver - Function that implements the worker's logic
    */
   export interface TaskWorker{
-    provides : string[];
-    requires : string[];
+    provides? : string[];
+    requires? : string[];
     resolver : WorkerResolver
   }
 
@@ -82,6 +82,8 @@ class FlowProducer{
   queue : MQ = null as any;
   specs : FlowProducer.FlowSpec = { tasks : {} };
   resolverRegistry = ResolversRegistry;
+
+  context : ValueMap = {};
 
   constructor( specs? : { tasks : Record< string , FlowProducer.TaskWorker > } ){
 
@@ -116,14 +118,19 @@ class FlowProducer{
       })
     }
 
+    this.context = Object.assign( {} , context || {} , params ? { params } : {} );
+
     return FlowProducer.run( this , params , expectedOutputs , context );
   }
 
   static run( flow : FlowProducer , params : ValueMap , expectedOutputs : string[] , context : ValueMap ):Promise<ValueMap>{
 
-    console.log({ params , expectedOutputs , actions : flow.resolverRegistry , context })
-
     return new Promise(( next ) => {
+      Object.assign( flow.queue , {
+        get $flow(){ return flow },
+        get $context(){ return context || {} },
+        get $params(){ return params || {} },
+      });
       flow.queue.start(() => {
 
         let resolved = [...flow.queue.jobs , ...flow.queue.results].flat(1);

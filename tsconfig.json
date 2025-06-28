@@ -24,6 +24,7 @@
       "@depts" : [ "src/depts.ts" ],
       "@envs" : [ "src/envs.ts" ],
       "@types" : [ "src/types.ts" ],
+      "@u/*" : [ "src/u/*" ],
     },
     "types": ["jest", "node"]
   },

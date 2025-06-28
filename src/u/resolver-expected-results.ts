@@ -30,12 +30,13 @@ namespace resolverExpectedResults{
 function resolverExpectedResults( data:resolverExpectedResults.Input , expected : resolverExpectedResults.Expected ):resolverExpectedResults.Output{
 
   if( !data )return {};
+  if( !expected || typeof expected !== 'object' )return data as resolverExpectedResults.Output;
 
   function resolveKeys( data:ValueMap , expected : resolverExpectedResults.Expected ): [ string , string | ValueMap ][] {
 
     return Object.keys( expected ).map(( key ) => {
       let newKey = expected[key];
-      if( typeof expected[key] == 'object' )return [ newKey , Object.fromEntries( resolveKeys( data[key] , expected[key] as resolverExpectedResults.Expected ) )];
+      if( typeof expected[key] == 'object' )return [ key , Object.fromEntries( resolveKeys( data[key] , expected[key] as resolverExpectedResults.Expected ) )];
       return [ newKey , data[key] ];
     }) as [ string , string | ValueMap ][]
   }
