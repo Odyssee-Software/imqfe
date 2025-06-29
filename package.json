@@ -11,6 +11,9 @@
 	"license": "ISC",
 	"description": "Flow Engine & In Memory Queue",
 	"files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
 		"workflow",
 		"flow",
