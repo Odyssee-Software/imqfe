@@ -230,7 +230,7 @@ const result = await flow.run(
 - **Privilégiez les flows pour les orchestrations complexes** : conditions, parallélisme, sous-flows, répétitions…
 - **Utilisez les résolveurs intégrés** pour accélérer le développement.
 - **Déboguez vos flows** en inspectant la propriété `queue` du flow pour voir l’état des jobs.
-- **Pour des pipelines très simples**, la MQ seule peut suffire (voir [guide MQ](./mq.md)).
+- **Pour des pipelines très simples**, la MQ seule peut suffire (voir [guide MQ](https://github.com/Odyssee-Software/imqfe/blob/main/guide/mq.md)).
 
 ---
 
@@ -359,7 +359,7 @@ console.log(result.outCollection);
 
 ## Pour aller plus loin
 
-- [Guide MQ](./mq.md) : pour comprendre la file d’attente et l’exécution de jobs simples.
+- [Guide MQ](https://github.com/Odyssee-Software/imqfe/blob/main/guide/mq.md) : pour comprendre la file d’attente et l’exécution de jobs simples.
 - [Code source des résolveurs](../src/resolver-registry.ts)
 - [Tests unitaires](../src/mq-flow.test.ts)
 - [Exemples dans `demo/flows/`](../demo/flows)

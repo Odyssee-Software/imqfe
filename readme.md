@@ -29,7 +29,7 @@ npm install @odyssee-software/imqfe
 ## Utilisation rapide
 
 ### 1. Création d’un flow simple
-Pour une introduction détaillée à la création et l’utilisation des flows, consultez le [guide des flows](./guide/flow.md).
+Pour une introduction détaillée à la création et l’utilisation des flows, consultez le [guide des flows](https://github.com/Odyssee-Software/imqfe/blob/main/guide/flow.md).
 
 ```ts
 import { FlowProducer } from '@odyssee-software/imqfe';
@@ -72,7 +72,7 @@ Voir [`src/resolver-registry.ts`](src/resolver-registry.ts) pour la liste compl�
 
 Le module MQ permet de gérer des files de jobs, leur exécution, le suivi d’état, les événements et les résultats, le tout en mémoire.
 
-Pour une explication complète et des exemples avancés, consultez le [guide MQ](./guide/mq.md).
+Pour une explication complète et des exemples avancés, consultez le [guide MQ](https://github.com/Odyssee-Software/imqfe/blob/main/guide/mq.md).
 
 ### Exemple minimal
 
@@ -124,7 +124,7 @@ Pour plus de détails, voir [`src/mq.ts`](src/mq.ts).
 - `add(taskName, taskSpec)` : Ajoute une tâche au flow
 - `run(params, expectedOutputs, actions?, context?)` : Exécute le flow et retourne les résultats attendus
 
-Pour plus d’informations et d’exemples, consultez le [guide des flows](./guide/flow.md).
+Pour plus d’informations et d’exemples, consultez le [guide des flows](https://github.com/Odyssee-Software/imqfe/blob/main/guide/flow.md).
 
 ### MQ ([`src/mq.ts`](src/mq.ts))
 
@@ -135,7 +135,7 @@ Pour plus d’informations et d’exemples, consultez le [guide des flows](./gui
 - Gestion des événements : `on('success'|'error'|'start'|'end', callback)`
 - Suivi d’un job : `worker.follow(callback)`
 
-Pour des cas d’usage avancés, voir le [guide MQ](./guide/mq.md).
+Pour des cas d’usage avancés, voir le [guide MQ](https://github.com/Odyssee-Software/imqfe/blob/main/guide/mq.md).
 
 ### WorkerController ([`src/mq.ts`](src/mq.ts))
 
