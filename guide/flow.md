@@ -169,9 +169,13 @@ const flowSpec = {
 
 Les tâches peuvent être chaînées : la sortie d’une tâche devient l’entrée d’une autre.
 
+![dependency](./dependency.png)
+
 ### Parallélisme
 
 Si deux tâches n’ont pas de dépendance entre elles, elles sont exécutées en parallèle.
+
+![dependency-parallel](./dependency-parallel.png)
 
 ### Sous-flows (SubFlow)
 
@@ -284,6 +288,8 @@ console.log(result.delta);
 ```
 
 #### 2. Exécution parallèle et agrégation
+
+![dependency-deep](./dependency-deep.png)
 
 ```js
 const flow = new FlowProducer({
